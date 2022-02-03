@@ -1,0 +1,745 @@
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.01
+OBJECT MODULE PLACED IN project.OBJ
+ASSEMBLER INVOKED BY: E:\tools\Keil\C51\BIN\A51.EXE project.asm SET(SMALL) DEBUG EP
+
+LOC  OBJ            LINE     SOURCE
+
+0000                   1             ORG 00H
+0000 0150              2             AJMP SETTING
+0050                   3             ORG 50H
+                       4     ;-----------------------------
+                       5     ;定義變數
+  0051                 6             X EQU 51H
+  0052                 7             Y EQU 52H
+  0097                 8             SPEAKER EQU P1.7
+  0053                 9             TONE1 EQU 53H
+  0054                10             TONE2 EQU 54H
+  0055                11             MCOUNT EQU 55H
+  0056                12             TEMPO EQU 56H
+  0057                13             TIME EQU 57H
+  0018                14             REG8 EQU 18H
+                      15     ;-----------------------------
+                      16     ;計時器及LCM設定
+0050                  17     SETTING:
+0050 758900           18             MOV TMOD, #0     ;Mode0,Timer
+0053 910D             19             ACALL DELAY5MS   ;等待 LCD 開啟
+0055 743B             20             MOV A, #00111011B ;設定 :8bits 介面、二列顯示、 5x7 點矩陣字型
+0057 7165             21             ACALL COMMAND
+0059 740C             22             MOV A, #00001100B ;設定 :DD RAM 顯示、游標不顯示、游標不閃爍
+005B 7165             23             ACALL COMMAND
+005D 7401             24             MOV A, #1        ;清除螢幕
+005F 7165             25             ACALL COMMAND
+0061 9114             26             ACALL DELAY2MS   ;等待執行結束
+0063 7440             27             MOV A, #01000000B ;設定 將 AC 指定給 CG RAM 使用，位址為 0
+0065 7165             28             ACALL COMMAND
+0067 8000             29             JMP SETFONT
+                      30     ;-----------------------------
+                      31     ;建立字型(小精靈、小鬼、勝利旗幟)
+0069                  32     SETFONT:                
+0069 90037F           33             MOV DPTR, #FONT  
+006C 7F30             34             MOV R7, #8*6     ;有六個字型
+006E                  35     NEXT:
+006E E4               36             CLR A
+006F 93               37             MOVC A, @A+DPTR
+0070 7172             38             ACALL SDATA      ;寫進CGRAM
+0072 A3               39             INC DPTR         ;下一行字
+0073 DFF9             40             DJNZ R7, NEXT
+                      41     ;-----------------------------
+                      42     ;畫40*2地圖
+0075                  43     START:
+0075 7401             44             MOV A, #1        ;清除螢幕
+0077 7165             45             ACALL COMMAND
+0079 9114             46             ACALL DELAY2MS   ;等待執行結束
+007B 7480             47             MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+007D 7165             48             ACALL COMMAND
+007F 7A02             49             MOV R2, #2
+                      50             
+0081                  51     LOOP:                    ;初始地圖 
+0081 74A5             52             MOV A, #0A5H     ;點點
+0083 7172             53             ACALL SDATA
+0085 DAFA             54             DJNZ R2, LOOP
+0087 7404             55             MOV A, #04H      ;小鬼1
+0089 7172             56             ACALL SDATA
+008B 7A05             57             MOV R2, #5
+                      58             
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     2
+
+008D                  59     LOOP1:
+008D 74A5             60             MOV A, #0A5H     ;點點
+008F 7172             61             ACALL SDATA
+0091 DAFA             62             DJNZ R2, LOOP1
+0093 7404             63             MOV A, #04H      ;小鬼2
+0095 7172             64             ACALL SDATA
+0097 7A0E             65             MOV R2, #14
+0099                  66     LOOP2:
+0099 74A5             67             MOV A, #0A5H     ;點點
+009B 7172             68             ACALL SDATA
+009D DAFA             69             DJNZ R2, LOOP2
+009F 7404             70             MOV A, #04H      ;小鬼3
+00A1 7172             71             ACALL SDATA
+00A3 7A07             72             MOV R2, #7      
+00A5                  73     LOOP3:  
+00A5 74A5             74             MOV A, #0A5H    ;點點
+00A7 7172             75             ACALL SDATA
+00A9 DAFA             76             DJNZ R2, LOOP3
+00AB 7404             77             MOV A, #04H      ;小鬼4
+00AD 7172             78             ACALL SDATA
+00AF 7404             79             MOV A, #04H      ;小鬼5
+00B1 7172             80             ACALL SDATA
+00B3 7404             81             MOV A, #04H      ;小鬼6
+00B5 7172             82             ACALL SDATA
+00B7 7A07             83             MOV R2, #7
+00B9                  84     LOOP4:
+00B9 74A5             85             MOV A, #0A5H
+00BB 7172             86             ACALL SDATA
+00BD DAFA             87             DJNZ R2, LOOP4
+00BF 7400             88             MOV A, #00H      ;(1,1)位置放小精靈
+00C1 7172             89             ACALL SDATA
+00C3 7A04             90             MOV R2, #4
+00C5                  91     LOOP5:
+00C5 74A5             92             MOV A, #0A5H     ;點點
+00C7 7172             93             ACALL SDATA
+00C9 DAFA             94             DJNZ R2, LOOP5
+00CB 7404             95             MOV A, #04H      ;小鬼7
+00CD 7172             96             ACALL SDATA
+00CF 7A05             97             MOV R2, #5
+00D1                  98     LOOP6:
+00D1 74A5             99             MOV A, #0A5H     ;點點
+00D3 7172            100             ACALL SDATA
+00D5 DAFA            101             DJNZ R2, LOOP6
+00D7 7404            102             MOV A, #04H      ;小鬼8
+00D9 7172            103             ACALL SDATA
+00DB 7A06            104             MOV R2, #6
+00DD                 105     LOOP7:
+00DD 74A5            106             MOV A, #0A5H     ;點點
+00DF 7172            107             ACALL SDATA
+00E1 DAFA            108             DJNZ R2, LOOP7
+00E3 7404            109             MOV A, #04H   ;小鬼9
+00E5 7172            110             ACALL SDATA
+00E7 7A08            111             MOV R2, #8
+00E9                 112     LOOP8:
+00E9 74A5            113             MOV A, #0A5H     ;點點
+00EB 7172            114             ACALL SDATA
+00ED DAFA            115             DJNZ R2, LOOP8
+00EF 7404            116             MOV A, #04H      ;小鬼10
+00F1 7172            117             ACALL SDATA
+00F3 7A08            118             MOV R2, #8
+00F5                 119     LOOP9:
+00F5 74A5            120             MOV A, #0A5H     ;點點
+00F7 7172            121             ACALL SDATA
+00F9 DAFA            122             DJNZ R2, LOOP9
+00FB 7404            123             MOV A, #04H      ;小鬼11
+00FD 7172            124             ACALL SDATA
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     3
+
+00FF 74A5            125             MOV A, #0A5H     ;點點
+0101 7172            126             ACALL SDATA     
+0103 7405            127             MOV A, #05H
+0105 7172            128             ACALL SDATA
+0107 755101          129             MOV X, #1        ;X,Y 用來記錄小精靈的座標
+010A 755201          130             MOV Y, #1
+010D 912F            131             ACALL DELAY500MS ;讓重啟時有緩衝時間
+010F 912F            132             ACALL DELAY500MS
+0111 912F            133             ACALL DELAY500MS
+0113 912F            134             ACALL DELAY500MS
+0115 912F            135             ACALL DELAY500MS
+                     136     ;-----------------------------
+                     137     ;鍵盤掃描
+0117                 138     ROW1:
+0117 75A07F          139             MOV P2, #7FH    ;掃描第一列
+011A 9120            140             ACALL DELAY35MS
+011C E5A0            141             MOV A, P2
+011E 540F            142             ANL A, #0FH     ;將高四位清為 0 只取列
+0120 7A00            143             MOV R2, #0      ;第一列第一行為 0
+0122 B40F02          144             CJNE A, #0FH,COL1;確認第一列有無被按下，有跳到 COL1
+0125 2196            145             AJMP MR         ;沒有跳到向右移副程式
+0127                 146     COL1:
+0127 B40E6C          147             CJNE A, #0EH, MR ;確認第一行有無被按下，有跳到jump的副程式
+012A 212C            148             AJMP MOVE_UP_RIGHT_DOWN ;沒有跳到向右移副程式
+                     149     ;-----------------------------
+                     150     ;有按到jump時，往上、右、右、右、下移動
+012C                 151     MOVE_UP_RIGHT_DOWN:     
+                     152     ;UP
+012C 7406            153             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+012E 7165            154             ACALL COMMAND
+0130 75F040          155             MOV B, #40H      ;計算小精靈的座標
+0133 E552            156             MOV A, Y
+0135 A4              157             MUL AB
+0136 2551            158             ADD A, X
+0138 2480            159             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+013A 7165            160             ACALL COMMAND
+013C FE              161             MOV R6, A
+013D 1552            162             DEC Y            ;小精靈往上， Y 座標 -1
+013F 7420            163             MOV A, #20H      ;先在小精靈的位置變成空白
+0141 7172            164             ACALL SDATA
+0143 EE              165             MOV A, R6
+0144 9440            166             SUBB A, #40H     ;下排到上排要減 40H
+0146 7165            167             ACALL COMMAND
+0148 7403            168             MOV A, #03H      ;填上往上的小精靈
+014A 7172            169             ACALL SDATA 
+014C 51D4            170             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+014E 912F            171             ACALL DELAY500MS
+                     172     ;RIGHT*1
+0150 7406            173             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+0152 7165            174             ACALL COMMAND
+0154 75F040          175             MOV B, #40H      ;計算小精靈的座標
+0157 E552            176             MOV A, Y
+0159 A4              177             MUL AB
+015A 2551            178             ADD A, X
+015C 2480            179             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+015E 7165            180             ACALL COMMAND
+0160 0551            181             INC X            ;小精靈往右， X 座標 +1
+0162 7420            182             MOV A, #20H      ;先在小精靈的位置變成空白
+0164 7172            183             ACALL SDATA
+0166 7400            184             MOV A, #00H      ;填上往右的小精靈
+0168 7172            185             ACALL SDATA
+016A 51D4            186             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+                     187     ;RIGHT_PICLEFT*1
+016C 7418            188             MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+016E 7165            189             ACALL COMMAND    ;顯示幕的同一個位置
+0170 912F            190             ACALL DELAY500MS
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     4
+
+                     191     ;RIGHT*2
+0172 7406            192             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+0174 7165            193             ACALL COMMAND
+0176 75F040          194             MOV B, #40H      ;計算小精靈的座標
+0179 E552            195             MOV A, Y
+017B A4              196             MUL AB
+017C 2551            197             ADD A, X
+017E 2480            198             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+0180 7165            199             ACALL COMMAND
+0182 0551            200             INC X            ;小精靈往右， X 座標 +1
+0184 7420            201             MOV A, #20H      ;先在小精靈的位置變成空白
+0186 7172            202             ACALL SDATA
+0188 7400            203             MOV A, #00H      ;填上往右的小精靈
+018A 7172            204             ACALL SDATA
+018C 51D4            205             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+                     206     ;RIGHT_PICLEFT*2
+018E 7418            207             MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+0190 7165            208             ACALL COMMAND    ;顯示幕的同一個位置
+0192 912F            209             ACALL DELAY500MS
+0194 2198            210             AJMP RIGHT3
+0196                 211     MR:
+0196 21E0            212             AJMP MOVE_RIGHT
+0198                 213     RIGHT3:
+0198 7406            214             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+019A 7165            215             ACALL COMMAND
+019C 75F040          216             MOV B, #40H      ;計算小精靈的座標
+019F E552            217             MOV A,Y
+01A1 A4              218             MUL AB
+01A2 2551            219             ADD A,X
+01A4 2480            220             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+01A6 7165            221             ACALL COMMAND
+01A8 0551            222             INC X            ;小精靈往右， X 座標 +1
+01AA 7420            223             MOV A, #20H      ;先在小精靈的位置變成空白
+01AC 7172            224             ACALL SDATA
+01AE 7400            225             MOV A, #00H      ;填上往右的小精靈
+01B0 7172            226             ACALL SDATA
+01B2 51D4            227             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+                     228     ;RIGHT_PICLEFT*2
+01B4 7418            229             MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+01B6 7165            230             ACALL COMMAND    ;顯示幕的同一個位置
+01B8 912F            231             ACALL DELAY500MS
+                     232     ;DOWN
+01BA 7406            233             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+01BC 7165            234             ACALL COMMAND
+01BE 75F040          235             MOV B, #40H      ;計算小精靈的座標
+01C1 E552            236             MOV A, Y
+01C3 A4              237             MUL AB
+01C4 2551            238             ADD A, X
+01C6 2480            239             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+01C8 7165            240             ACALL COMMAND
+01CA FE              241             MOV R6, A
+01CB 0552            242             INC Y            ;小精靈往下， Y 座標 +1
+01CD 7420            243             MOV A, #20H      ;先在小精靈的位置變成空白
+01CF 7172            244             ACALL SDATA
+01D1 EE              245             MOV A, R6
+01D2 2440            246             ADD A, #40H      ;上排到下排要加 40H
+01D4 7165            247             ACALL COMMAND
+01D6 7401            248             MOV A, #01H      ;填上往下的小精靈
+01D8 7172            249             ACALL SDATA
+01DA 51D4            250             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+01DC 912F            251             ACALL DELAY500MS
+01DE 2117            252             AJMP ROW1
+                     253     ;-----------------------------
+                     254     ;若沒按jump，則向右移動一格
+01E0                 255     MOVE_RIGHT:
+                     256     ;RIGHT*1
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     5
+
+01E0 7B01            257             MOV R3, #1
+01E2 7406            258             MOV A, #00000110B ;AC 遞增、顯示幕不移位
+01E4 7165            259             ACALL COMMAND
+01E6 75F040          260             MOV B, #40H      ;計算小精靈的座標
+01E9 E552            261             MOV A, Y
+01EB A4              262             MUL AB
+01EC 2551            263             ADD A, X
+01EE 2480            264             ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+01F0 7165            265             ACALL COMMAND
+01F2 0551            266             INC X            ;小精靈往右， X 座標 +1
+01F4 7420            267             MOV A, #20H      ;先在小精靈的位置變成空白
+01F6 7172            268             ACALL SDATA
+01F8 7400            269             MOV A, #00H      ;填上往右的小精靈
+01FA 7172            270             ACALL SDATA
+01FC 51D4            271             ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+                     272     ;RIGHT_PICLEFT*1
+01FE 7418            273             MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+0200 7165            274             ACALL COMMAND    ;顯示幕的同一個位置
+0202 912F            275             ACALL DELAY500MS
+                     276     ;-----------------------------
+0204                 277     JMPROW:
+0204 2117            278             AJMP ROW1
+0206                 279     JMPSET:
+0206 0150            280             AJMP SETTING
+                     281     ;-----------------------------
+                     282     ;結束畫面的顯示有兩種：勝利與死亡
+0208                 283     SHOWDIE:                 ;碰到鬼時，顯示輸的畫面
+0208 7401            284             MOV A, #1        ;清除螢幕
+020A 7165            285             ACALL COMMAND
+020C 9114            286             ACALL DELAY2MS   ;等待執行結束
+020E 7480            287             MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+0210 7165            288             ACALL COMMAND
+0212 9003AF          289             MOV DPTR, #DIE
+0215                 290     SHOWDIE1:
+0215 E4              291             CLR A
+0216 93              292             MOVC A, @A+DPTR
+0217 6005            293             JZ SHOWDIE2      ;第二列顯示字樣
+0219 7172            294             ACALL SDATA
+021B A3              295             INC DPTR         ;下一個字
+021C 80F7            296             SJMP SHOWDIE1
+021E                 297     SHOWDIE2:
+021E 74C0            298             MOV A, #11000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 40H
+0220 7165            299             ACALL COMMAND
+0222 9003C2          300             MOV DPTR, #AGAIN
+0225                 301     SHOWDIE3:
+0225 E4              302             CLR A
+0226 93              303             MOVC A, @A+DPTR
+0227 602B            304             JZ DIESOUND      ;顯示完字幕之後，發出輸的音效
+0229 7172            305             ACALL SDATA
+022B A3              306             INC DPTR         ;下一個字
+022C 80F7            307             SJMP SHOWDIE3
+022E                 308     SHOWWIN:
+022E 7401            309             MOV A, #1        ;清除螢幕
+0230 7165            310             ACALL COMMAND
+0232 9114            311             ACALL DELAY2MS   ;等待執行結束
+0234 7480            312             MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+0236 7165            313             ACALL COMMAND
+0238 9003B9          314             MOV DPTR, #WIN
+023B                 315     SHOWWIN1:                ;碰到旗子時，顯示贏的畫面
+023B E4              316             CLR A
+023C 93              317             MOVC A, @A+DPTR
+023D 6005            318             JZ SHOWWIN2      ;第二列顯示也字樣
+023F 7172            319             ACALL SDATA
+0241 A3              320             INC DPTR         ;下一個字
+0242 80F7            321             SJMP SHOWWIN1
+0244                 322     SHOWWIN2:
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     6
+
+0244 74C0            323             MOV A,#11000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 40H
+0246 7165            324             ACALL COMMAND
+0248 9003C2          325             MOV DPTR, #AGAIN
+024B                 326     SHOWWIN3:
+024B E4              327             CLR A
+024C 93              328             MOVC A, @A+DPTR
+024D 6032            329             JZ WINSOUND      ;顯示完字幕之後，發出贏的音效
+024F 7172            330             ACALL SDATA
+0251 A3              331             INC DPTR         ;下一個字
+0252 80F7            332             SJMP SHOWWIN3
+                     333     ;-----------------------------
+                     334     ;結束的音效播放有兩種(勝利與死亡)
+0254                 335     DIESOUND:
+0254 755500          336             MOV MCOUNT, #0   ;Music Counter
+0257 75F008          337             MOV B, #8 ;8 個音
+025A                 338     BEGIN1:
+025A 9003F0          339             MOV DPTR, #DSCALE
+025D E555            340             MOV A, MCOUNT    ;從 SCALE 取得音調的商
+025F 93              341             MOVC A, @A+DPTR
+0260 F553            342             MOV TONE1, A     ;商
+0262 0555            343             INC MCOUNT
+0264 E555            344             MOV A, MCOUNT    ;從 SCALE 取得音調的餘數
+0266 93              345             MOVC A, @A+DPTR
+0267 F554            346             MOV TONE2, A     ;餘數
+0269 0555            347             INC MCOUNT
+026B E555            348             MOV A, MCOUNT    ;從 SCALE 取得拍子資料
+026D 93              349             MOVC A, @A+DPTR
+026E F556            350             MOV TEMPO, A
+0270 85538C          351             MOV TH0, TONE1   ;計時器初始值
+0273 85548A          352             MOV TL0, TONE2
+0276 51B4            353             ACALL SOUND      ;發出聲音
+0278 0555            354             INC MCOUNT
+027A 910D            355             ACALL DELAY5MS
+027C D5F0DB          356             DJNZ B, BEGIN1
+027F 4106            357             AJMP JMPSET
+0281                 358     WINSOUND:
+0281 755500          359             MOV MCOUNT, #0   ;Music Counter
+0284 75F00A          360             MOV B, #10       ;10 個音
+0287 8004            361             JMP BEGIN
+0289                 362     DELAY:
+0289 9120            363             ACALL DELAY35MS
+028B 0555            364             INC MCOUNT
+028D                 365     BEGIN:
+028D 9003D1          366             MOV DPTR, #WSCALE
+0290 E555            367             MOV A, MCOUNT    ;從 SCALE 取得音調的 商
+0292 93              368             MOVC A, @A+DPTR
+0293 F553            369             MOV TONE1, A     ;商
+0295 0555            370             INC MCOUNT
+0297 E555            371             MOV A, MCOUNT    ;從 SCALE 取得音調的餘數
+0299 93              372             MOVC A, @A+DPTR
+029A F554            373             MOV TONE2, A     ;餘數
+029C 0555            374             INC MCOUNT
+029E E555            375             MOV A, MCOUNT    ;從 SCALE 取得拍子資料
+02A0 93              376             MOVC A, @A+DPTR
+02A1 F556            377             MOV TEMPO, A
+02A3 85538C          378             MOV TH0, TONE1   ;計時器初始值
+02A6 85548A          379             MOV TL0, TONE2
+02A9 51B4            380             ACALL SOUND      ;發出聲音
+02AB 0555            381             INC MCOUNT
+02AD 910D            382             ACALL DELAY5MS
+02AF D5F0DB          383             DJNZ B,BEGIN
+02B2 4106            384             AJMP JMPSET
+02B4                 385     SOUND:
+02B4 755702          386             MOV TIME, #2     ;兩個循環
+02B7                 387     sound1:
+02B7 D297            388             SETB SPEAKER     ;SPEAKER ON
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     7
+
+02B9 51C6            389             ACALL SDELAY     ;半週期
+02BB C297            390             CLR SPEAKER      ;SPEAKER OFF
+02BD 51C6            391             ACALL SDELAY
+02BF D557F5          392             DJNZ TIME, sound1
+02C2 D556EF          393             DJNZ TEMPO, SOUND
+02C5 22              394             RET
+02C6                 395     SDELAY:
+02C6 D28C            396             SETB TR0         ;開始計時
+02C8 308DFD          397             JNB TF0, $       ;TF0=0 ，卡在這行程式，確認有無 overflow
+02CB C28D            398             CLR TF0          ;清掉 TF0
+02CD 85538C          399             MOV TH0, TONE1   ;重給初始值
+02D0 85548A          400             MOV TL0, TONE2
+02D3 22              401             RET
+                     402     ;-----------------------------
+                     403     ;利用polling方式判斷勝利/死亡與否
+02D4                 404     CHECKTHING:                ;檢查是否碰到鬼或旗子
+02D4 AD51            405             MOV R5, X
+02D6 BD0207          406             CJNE R5, #2, CHECKG1 ;鬼 X=2,Y=0
+02D9 AF52            407             MOV R7, Y
+02DB BF0002          408             CJNE R7, #0, CHECKG1
+02DE 4108            409             AJMP SHOWDIE       ;碰到這個點就顯示輸的畫面
+02E0                 410     CHECKG1:
+02E0 AD51            411             MOV R5, X
+02E2 BD0807          412             CJNE R5, #8, CHECKG2 ;鬼 X=8,Y=0
+02E5 AF52            413             MOV R7, Y
+02E7 BF0002          414             CJNE R7, #0 ,CHECKG2
+02EA 4108            415             AJMP SHOWDIE       ;碰到這個點就顯示輸的畫面
+02EC                 416     CHECKG2:
+02EC AD51            417             MOV R5, X
+02EE BD1707          418             CJNE R5, #23, CHECKG3 ;鬼 X=23,Y=0
+02F1 AF52            419             MOV R7, Y
+02F3 BF0002          420             CJNE R7, #0, CHECKG3
+02F6 4108            421             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+02F8                 422     CHECKG3:
+02F8 AD51            423             MOV R5, X
+02FA BD1F07          424             CJNE R5, #31, CHECKG4 ;鬼 X=31,Y=0
+02FD AF52            425             MOV R7, Y
+02FF BF0002          426             CJNE R7, #0, CHECKG4
+0302 4108            427             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+0304                 428     CHECKG4:
+0304 AD51            429             MOV R5, X
+0306 BD2007          430             CJNE R5, #32, CHECKG5 ;鬼 X=32,Y=0
+0309 AF52            431             MOV R7, Y
+030B BF0002          432             CJNE R7, #0, CHECKG5
+030E 4108            433             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+0310                 434     CHECKG5:
+0310 AD51            435             MOV R5, X
+0312 BD2107          436             CJNE R5, #33, CHECKG6 ;鬼 X=33,Y=0
+0315 AF52            437             MOV R7, Y
+0317 BF0002          438             CJNE R7, #0, CHECKG6
+031A 4108            439             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+031C                 440     CHECKG6:
+031C AD51            441             MOV R5, X
+031E BD0607          442             CJNE R5, #6, CHECKG7  ;鬼 X=6,Y=1
+0321 AF52            443             MOV R7,Y
+0323 BF0102          444             CJNE R7, #1, CHECKG7
+0326 4108            445             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+0328                 446     CHECKG7:
+0328 AD51            447             MOV R5, X
+032A BD0C07          448             CJNE R5, #12, CHECKG8 ;鬼 X=12,Y=1
+032D AF52            449             MOV R7, Y
+032F BF0102          450             CJNE R7, #1, CHECKG8
+0332 4108            451             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+0334                 452     CHECKG8:
+0334 AD51            453             MOV R5, X
+0336 BD1307          454             CJNE R5, #19, CHECKG9 ;鬼 X=19,Y=1
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     8
+
+0339 AF52            455             MOV R7, Y
+033B BF0102          456             CJNE R7, #1, CHECKG9
+033E 4108            457             AJMP SHOWDIE        ;碰到這個點就顯示輸的畫面
+0340                 458     CHECKG9:
+0340 AD51            459             MOV R5, X
+0342 BD1C07          460             CJNE R5, #28, CHECKG10 ;鬼 X=18,Y=1
+0345 AF52            461             MOV R7,Y
+0347 BF0102          462             CJNE R7, #1, CHECKG10
+034A 4108            463             AJMP SHOWDIE         ;碰到這個點就顯示輸的畫面
+034C                 464     CHECKG10:
+034C AD51            465             MOV R5, X
+034E BD2507          466             CJNE R5, #37, CHECKF   ;鬼 X=37,Y=1
+0351 AF52            467             MOV R7, Y
+0353 BF0102          468             CJNE R7, #1, CHECKF
+0356 4108            469             AJMP SHOWDIE         ;碰到這個點就顯示輸的畫面
+0358                 470     CHECKF:
+0358 AD51            471             MOV R5, X
+035A BD2707          472             CJNE R5, #39, RETURN   ;旗子 X=39,Y=1
+035D AF52            473             MOV R7, Y
+035F BF0102          474             CJNE R7, #1, RETURN
+0362 412E            475             AJMP SHOWWIN         ;碰到這個點就顯示贏的畫面
+0364                 476     RETURN:
+0364 22              477             RET
+                     478     ;-----------------------------
+                     479     ;LCM的控制   
+0365                 480     COMMAND:
+0365 F580            481             MOV P0, A
+0367 759004          482             MOV P1, #00000100B ;Data Bus --> Instruction Register
+036A 9108            483             ACALL DELAY40US
+036C 759000          484             MOV P1, #00000000B
+036F 9108            485             ACALL DELAY40US
+0371 22              486             RET
+0372                 487     SDATA:
+0372 F580            488             MOV P0, A
+0374 759005          489             MOV P1, #00000101B ;Data Bus --> Data Register --> DD RAM
+0377 9108            490             ACALL DELAY40US
+0379 759001          491             MOV P1, #00000001B
+037C 9108            492             ACALL DELAY40US
+037E 22              493             RET
+                     494     ;-----------------------------
+037F                 495     FONT:
+037F 00              496             DB 00000B ;小精靈向右的圖
+0380 0E              497             DB 01110B
+0381 1F              498             DB 11111B
+0382 1C              499             DB 11100B
+0383 1F              500             DB 11111B
+0384 0E              501             DB 01110B
+0385 00              502             DB 00000B
+0386 00              503             DB 00000B
+0387 00              504             DB 00000B ;小精靈向下的圖
+0388 0E              505             DB 01110B
+0389 1F              506             DB 11111B
+038A 1F              507             DB 11111B
+038B 1B              508             DB 11011B
+038C 0A              509             DB 01010B
+038D 00              510             DB 00000B
+038E 00              511             DB 00000B
+038F 00              512             DB 00000B ;小精靈向左的圖
+0390 0E              513             DB 01110B
+0391 1F              514             DB 11111B
+0392 07              515             DB 00111B
+0393 1F              516             DB 11111B
+0394 0E              517             DB 01110B
+0395 00              518             DB 00000B
+0396 00              519             DB 00000B
+0397 00              520             DB 00000B ;小精靈向上的圖
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE     9
+
+0398 0A              521             DB 01010B
+0399 1B              522             DB 11011B
+039A 1F              523             DB 11111B
+039B 1F              524             DB 11111B
+039C 0E              525             DB 01110B
+039D 00              526             DB 00000B
+039E 00              527             DB 00000B
+039F 00              528             DB 00000B ;鬼
+03A0 0E              529             DB 01110B
+03A1 1F              530             DB 11111B
+03A2 15              531             DB 10101B
+03A3 1F              532             DB 11111B
+03A4 15              533             DB 10101B
+03A5 00              534             DB 00000B
+03A6 00              535             DB 00000B
+03A7 00              536             DB 00000B ;終點旗子
+03A8 04              537             DB 00100B
+03A9 06              538             DB 00110B
+03AA 07              539             DB 00111B
+03AB 04              540             DB 00100B
+03AC 1F              541             DB 11111B
+03AD 00              542             DB 00000B
+03AE 00              543             DB 00000B
+03AF                 544     DIE:
+03AF 596F7520        545             DB "You Lose!",0
+03B3 4C6F7365                
+03B7 2100                    
+03B9                 546     WIN:
+03B9 596F7520        547             DB "You Win!",0
+03BD 57696E21                
+03C1 00                      
+03C2                 548     AGAIN:
+03C2 4F6E6520        549             DB "One More Game!",0
+03C6 4D6F7265                
+03CA 2047616D                
+03CE 652100                  
+03D1                 550     WSCALE:
+03D1 F21374          551             DB 242, 19, 116 ;7
+03D4 F21374          552             DB 242, 19, 116 ;7
+03D7 00              553             DB 0
+03D8 F40383          554             DB 244, 3, 131  ;1
+03DB F50C93          555             DB 245, 12, 147 ;2
+03DE F50C93          556             DB 245, 12, 147 ;2
+03E1 F40383          557             DB 244, 3, 131  ;1
+03E4 F50C93          558             DB 245, 12, 147 ;2
+03E7 F50C93          559             DB 245, 12, 147 ;2
+03EA F50C93          560             DB 245, 12, 147 ;2
+03ED F50C93          561             DB 245, 12, 147 ;2
+03F0                 562     DSCALE:
+03F0 F00262          563             DB 240, 2, 98  ;5
+03F3 F00262          564             DB 240, 2, 98  ;5
+03F6 F00262          565             DB 240, 2, 98  ;5
+03F9 DA0452          566             DB 218, 4, 82  ;3
+03FC EE0557          567             DB 238, 5, 87  ;4
+03FF EE0557          568             DB 238, 5, 87  ;4
+0402 EE0557          569             DB 238, 5, 87  ;4
+0405 AA1F49          570             DB 170, 31, 73 ;2
+                     571     ;-----------------------------
+0408                 572     DELAY40US:
+0408 7878            573             MOV R0, #120
+040A D8FE            574         DJNZ R0, $
+040C 22              575             RET
+040D                 576     DELAY5MS:
+040D 9119            577             ACALL DELAY1MS
+040F 9114            578             ACALL DELAY2MS
+0411 9114            579             ACALL DELAY2MS
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE    10
+
+0413 22              580             RET
+0414                 581     DELAY2MS:
+0414 9119            582             ACALL DELAY1MS
+0416 9119            583             ACALL DELAY1MS
+0418 22              584             RET
+0419                 585     DELAY1MS:
+0419 7919            586             MOV R1, #25
+041B                 587     DELAY1MS1:
+041B 9108            588             ACALL DELAY40US
+041D D9FC            589             DJNZ R1,DELAY1MS1
+041F 22              590             RET
+0420                 591     DELAY35MS:
+0420 910D            592             ACALL DELAY5MS
+0422 910D            593             ACALL DELAY5MS
+0424 910D            594             ACALL DELAY5MS
+0426 910D            595             ACALL DELAY5MS
+0428 910D            596             ACALL DELAY5MS
+042A 910D            597             ACALL DELAY5MS
+042C 910D            598             ACALL DELAY5MS
+042E 22              599             RET
+042F                 600     DELAY500MS: 
+042F 751864          601             MOV REG8, #100
+0432                 602     DELAY500MS1: 
+0432 9119            603             ACALL DELAY1MS
+0434 9119            604         ACALL DELAY1MS
+0436 9119            605         ACALL DELAY1MS
+0438 9119            606         ACALL DELAY1MS
+043A D518F5          607         DJNZ REG8,DELAY500MS1
+043D 22              608         RET
+                     609             
+                     610             END
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE    11
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+AGAIN. . . . . . .  C ADDR   03C2H   A   
+B. . . . . . . . .  D ADDR   00F0H   A   
+BEGIN. . . . . . .  C ADDR   028DH   A   
+BEGIN1 . . . . . .  C ADDR   025AH   A   
+CHECKF . . . . . .  C ADDR   0358H   A   
+CHECKG1. . . . . .  C ADDR   02E0H   A   
+CHECKG10 . . . . .  C ADDR   034CH   A   
+CHECKG2. . . . . .  C ADDR   02ECH   A   
+CHECKG3. . . . . .  C ADDR   02F8H   A   
+CHECKG4. . . . . .  C ADDR   0304H   A   
+CHECKG5. . . . . .  C ADDR   0310H   A   
+CHECKG6. . . . . .  C ADDR   031CH   A   
+CHECKG7. . . . . .  C ADDR   0328H   A   
+CHECKG8. . . . . .  C ADDR   0334H   A   
+CHECKG9. . . . . .  C ADDR   0340H   A   
+CHECKTHING . . . .  C ADDR   02D4H   A   
+COL1 . . . . . . .  C ADDR   0127H   A   
+COMMAND. . . . . .  C ADDR   0365H   A   
+DELAY. . . . . . .  C ADDR   0289H   A   
+DELAY1MS . . . . .  C ADDR   0419H   A   
+DELAY1MS1. . . . .  C ADDR   041BH   A   
+DELAY2MS . . . . .  C ADDR   0414H   A   
+DELAY35MS. . . . .  C ADDR   0420H   A   
+DELAY40US. . . . .  C ADDR   0408H   A   
+DELAY500MS . . . .  C ADDR   042FH   A   
+DELAY500MS1. . . .  C ADDR   0432H   A   
+DELAY5MS . . . . .  C ADDR   040DH   A   
+DIE. . . . . . . .  C ADDR   03AFH   A   
+DIESOUND . . . . .  C ADDR   0254H   A   
+DSCALE . . . . . .  C ADDR   03F0H   A   
+FONT . . . . . . .  C ADDR   037FH   A   
+JMPROW . . . . . .  C ADDR   0204H   A   
+JMPSET . . . . . .  C ADDR   0206H   A   
+LOOP . . . . . . .  C ADDR   0081H   A   
+LOOP1. . . . . . .  C ADDR   008DH   A   
+LOOP2. . . . . . .  C ADDR   0099H   A   
+LOOP3. . . . . . .  C ADDR   00A5H   A   
+LOOP4. . . . . . .  C ADDR   00B9H   A   
+LOOP5. . . . . . .  C ADDR   00C5H   A   
+LOOP6. . . . . . .  C ADDR   00D1H   A   
+LOOP7. . . . . . .  C ADDR   00DDH   A   
+LOOP8. . . . . . .  C ADDR   00E9H   A   
+LOOP9. . . . . . .  C ADDR   00F5H   A   
+MCOUNT . . . . . .  N NUMB   0055H   A   
+MOVE_RIGHT . . . .  C ADDR   01E0H   A   
+MOVE_UP_RIGHT_DOWN  C ADDR   012CH   A   
+MR . . . . . . . .  C ADDR   0196H   A   
+NEXT . . . . . . .  C ADDR   006EH   A   
+P0 . . . . . . . .  D ADDR   0080H   A   
+P1 . . . . . . . .  D ADDR   0090H   A   
+P2 . . . . . . . .  D ADDR   00A0H   A   
+REG8 . . . . . . .  N NUMB   0018H   A   
+RETURN . . . . . .  C ADDR   0364H   A   
+RIGHT3 . . . . . .  C ADDR   0198H   A   
+ROW1 . . . . . . .  C ADDR   0117H   A   
+SDATA. . . . . . .  C ADDR   0372H   A   
+SDELAY . . . . . .  C ADDR   02C6H   A   
+SETFONT. . . . . .  C ADDR   0069H   A   
+SETTING. . . . . .  C ADDR   0050H   A   
+SHOWDIE. . . . . .  C ADDR   0208H   A   
+A51 MACRO ASSEMBLER  PROJECT                                                              01/14/2020 12:40:24 PAGE    12
+
+SHOWDIE1 . . . . .  C ADDR   0215H   A   
+SHOWDIE2 . . . . .  C ADDR   021EH   A   
+SHOWDIE3 . . . . .  C ADDR   0225H   A   
+SHOWWIN. . . . . .  C ADDR   022EH   A   
+SHOWWIN1 . . . . .  C ADDR   023BH   A   
+SHOWWIN2 . . . . .  C ADDR   0244H   A   
+SHOWWIN3 . . . . .  C ADDR   024BH   A   
+SOUND. . . . . . .  C ADDR   02B4H   A   
+SOUND1 . . . . . .  C ADDR   02B7H   A   
+SPEAKER. . . . . .  B ADDR   0090H.7 A   
+START. . . . . . .  C ADDR   0075H   A   
+TEMPO. . . . . . .  N NUMB   0056H   A   
+TF0. . . . . . . .  B ADDR   0088H.5 A   
+TH0. . . . . . . .  D ADDR   008CH   A   
+TIME . . . . . . .  N NUMB   0057H   A   
+TL0. . . . . . . .  D ADDR   008AH   A   
+TMOD . . . . . . .  D ADDR   0089H   A   
+TONE1. . . . . . .  N NUMB   0053H   A   
+TONE2. . . . . . .  N NUMB   0054H   A   
+TR0. . . . . . . .  B ADDR   0088H.4 A   
+WIN. . . . . . . .  C ADDR   03B9H   A   
+WINSOUND . . . . .  C ADDR   0281H   A   
+WSCALE . . . . . .  C ADDR   03D1H   A   
+X. . . . . . . . .  N NUMB   0051H   A   
+Y. . . . . . . . .  N NUMB   0052H   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

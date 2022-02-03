@@ -1,0 +1,610 @@
+	ORG 00H
+	AJMP SETTING
+	ORG 50H
+;-----------------------------
+;定義變數
+	X EQU 51H
+	Y EQU 52H
+	SPEAKER EQU P1.7
+	TONE1 EQU 53H
+	TONE2 EQU 54H
+	MCOUNT EQU 55H
+	TEMPO EQU 56H
+	TIME EQU 57H
+	REG8 EQU 18H
+;-----------------------------
+;計時器及LCM設定
+SETTING:
+	MOV TMOD, #0	 ;Mode0,Timer
+	ACALL DELAY5MS 	 ;等待 LCD 開啟
+	MOV A, #00111011B ;設定 :8bits 介面、二列顯示、 5x7 點矩陣字型
+	ACALL COMMAND
+	MOV A, #00001100B ;設定 :DD RAM 顯示、游標不顯示、游標不閃爍
+	ACALL COMMAND
+	MOV A, #1 	 ;清除螢幕
+	ACALL COMMAND
+	ACALL DELAY2MS 	 ;等待執行結束
+	MOV A, #01000000B ;設定 將 AC 指定給 CG RAM 使用，位址為 0
+	ACALL COMMAND
+	JMP SETFONT
+;-----------------------------
+;建立字型(小精靈、小鬼、勝利旗幟)
+SETFONT:		
+	MOV DPTR, #FONT	 
+	MOV R7, #8*6	 ;有六個字型
+NEXT:
+	CLR A
+	MOVC A, @A+DPTR
+	ACALL SDATA	 ;寫進CGRAM
+	INC DPTR 	 ;下一行字
+	DJNZ R7, NEXT
+;-----------------------------
+;畫40*2地圖
+START:
+	MOV A, #1 	 ;清除螢幕
+	ACALL COMMAND
+	ACALL DELAY2MS 	 ;等待執行結束
+	MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+	ACALL COMMAND
+	MOV R2, #2
+	
+LOOP:			 ;初始地圖 
+	MOV A, #0A5H 	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP
+	MOV A, #04H 	 ;小鬼1
+	ACALL SDATA
+	MOV R2, #5
+	
+LOOP1:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP1
+	MOV A, #04H	 ;小鬼2
+	ACALL SDATA
+	MOV R2, #14
+LOOP2:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP2
+	MOV A, #04H	 ;小鬼3
+	ACALL SDATA
+	MOV R2, #7	
+LOOP3:	
+	MOV A, #0A5H	;點點
+	ACALL SDATA
+	DJNZ R2, LOOP3
+	MOV A, #04H	 ;小鬼4
+	ACALL SDATA
+	MOV A, #04H	 ;小鬼5
+	ACALL SDATA
+	MOV A, #04H	 ;小鬼6
+	ACALL SDATA
+	MOV R2, #7
+LOOP4:
+	MOV A, #0A5H
+	ACALL SDATA
+	DJNZ R2, LOOP4
+	MOV A, #00H 	 ;(1,1)位置放小精靈
+	ACALL SDATA
+	MOV R2, #4
+LOOP5:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP5
+	MOV A, #04H	 ;小鬼7
+	ACALL SDATA
+	MOV R2, #5
+LOOP6:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP6
+	MOV A, #04H	 ;小鬼8
+	ACALL SDATA
+	MOV R2, #6
+LOOP7:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP7
+	MOV A, #04H   ;小鬼9
+	ACALL SDATA
+	MOV R2, #8
+LOOP8:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP8
+	MOV A, #04H	 ;小鬼10
+	ACALL SDATA
+	MOV R2, #8
+LOOP9:
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA
+	DJNZ R2, LOOP9
+	MOV A, #04H	 ;小鬼11
+	ACALL SDATA
+	MOV A, #0A5H	 ;點點
+	ACALL SDATA	
+	MOV A, #05H
+	ACALL SDATA
+	MOV X, #1 	 ;X,Y 用來記錄小精靈的座標
+	MOV Y, #1
+	ACALL DELAY500MS ;讓重啟時有緩衝時間
+	ACALL DELAY500MS
+	ACALL DELAY500MS
+	ACALL DELAY500MS
+	ACALL DELAY500MS
+;-----------------------------
+;鍵盤掃描
+ROW1:
+	MOV P2, #7FH 	;掃描第一列
+	ACALL DELAY35MS
+	MOV A, P2
+	ANL A, #0FH 	;將高四位清為 0 只取列
+	MOV R2, #0 	;第一列第一行為 0
+	CJNE A, #0FH,COL1;確認第一列有無被按下，有跳到 COL1
+	AJMP MR		;沒有跳到向右移副程式
+COL1:
+	CJNE A, #0EH, MR ;確認第一行有無被按下，有跳到jump的副程式
+	AJMP MOVE_UP_RIGHT_DOWN	;沒有跳到向右移副程式
+;-----------------------------
+;有按到jump時，往上、右、右、右、下移動
+MOVE_UP_RIGHT_DOWN:	
+;UP
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H 	 ;計算小精靈的座標
+	MOV A, Y
+	MUL AB
+	ADD A, X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	MOV R6, A
+	DEC Y 		 ;小精靈往上， Y 座標 -1
+	MOV A, #20H  	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, R6
+	SUBB A, #40H 	 ;下排到上排要減 40H
+	ACALL COMMAND
+	MOV A, #03H   	 ;填上往上的小精靈
+	ACALL SDATA 
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+	ACALL DELAY500MS
+;RIGHT*1
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H	 ;計算小精靈的座標
+	MOV A, Y
+	MUL AB
+	ADD A, X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	INC X 		 ;小精靈往右， X 座標 +1
+	MOV A, #20H  	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, #00H  	 ;填上往右的小精靈
+	ACALL SDATA
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+;RIGHT_PICLEFT*1
+	MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+	ACALL COMMAND	 ;顯示幕的同一個位置
+	ACALL DELAY500MS
+;RIGHT*2
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H	 ;計算小精靈的座標
+	MOV A, Y
+	MUL AB
+	ADD A, X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	INC X 		 ;小精靈往右， X 座標 +1
+	MOV A, #20H  	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, #00H  	 ;填上往右的小精靈
+	ACALL SDATA
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+;RIGHT_PICLEFT*2
+	MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+	ACALL COMMAND	 ;顯示幕的同一個位置
+	ACALL DELAY500MS
+	AJMP RIGHT3
+MR:
+	AJMP MOVE_RIGHT
+RIGHT3:
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H	 ;計算小精靈的座標
+	MOV A,Y
+	MUL AB
+	ADD A,X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	INC X 		 ;小精靈往右， X 座標 +1
+	MOV A, #20H   	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, #00H  	 ;填上往右的小精靈
+	ACALL SDATA
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+;RIGHT_PICLEFT*2
+	MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+	ACALL COMMAND	 ;顯示幕的同一個位置
+	ACALL DELAY500MS
+;DOWN
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H 	 ;計算小精靈的座標
+	MOV A, Y
+	MUL AB
+	ADD A, X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	MOV R6, A
+	INC Y 		 ;小精靈往下， Y 座標 +1
+	MOV A, #20H  	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, R6
+	ADD A, #40H  	 ;上排到下排要加 40H
+	ACALL COMMAND
+	MOV A, #01H  	 ;填上往下的小精靈
+	ACALL SDATA
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+	ACALL DELAY500MS
+	AJMP ROW1
+;-----------------------------
+;若沒按jump，則向右移動一格
+MOVE_RIGHT:
+;RIGHT*1
+	MOV R3, #1
+	MOV A, #00000110B ;AC 遞增、顯示幕不移位
+	ACALL COMMAND
+	MOV B, #40H	 ;計算小精靈的座標
+	MOV A, Y
+	MUL AB
+	ADD A, X
+	ADD A, #10000000B ;使用 LCM 指令，定 AC 的位址
+	ACALL COMMAND
+	INC X 		 ;小精靈往右， X 座標 +1
+	MOV A, #20H  	 ;先在小精靈的位置變成空白
+	ACALL SDATA
+	MOV A, #00H  	 ;填上往右的小精靈
+	ACALL SDATA
+	ACALL CHECKTHING ;檢查會不會碰到鬼或是旗子
+;RIGHT_PICLEFT*1
+	MOV A, #00011000B ;將畫布左移，讓小精靈維持在
+	ACALL COMMAND	 ;顯示幕的同一個位置
+	ACALL DELAY500MS
+;-----------------------------
+JMPROW:
+	AJMP ROW1
+JMPSET:
+	AJMP SETTING
+;-----------------------------
+;結束畫面的顯示有兩種：勝利與死亡
+SHOWDIE:		 ;碰到鬼時，顯示輸的畫面
+	MOV A, #1 	 ;清除螢幕
+	ACALL COMMAND
+	ACALL DELAY2MS 	 ;等待執行結束
+	MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+	ACALL COMMAND
+	MOV DPTR, #DIE
+SHOWDIE1:
+	CLR A
+	MOVC A, @A+DPTR
+	JZ SHOWDIE2 	 ;第二列顯示字樣
+	ACALL SDATA
+	INC DPTR 	 ;下一個字
+	SJMP SHOWDIE1
+SHOWDIE2:
+	MOV A, #11000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 40H
+	ACALL COMMAND
+	MOV DPTR, #AGAIN
+SHOWDIE3:
+	CLR A
+	MOVC A, @A+DPTR
+	JZ DIESOUND 	 ;顯示完字幕之後，發出輸的音效
+	ACALL SDATA
+	INC DPTR 	 ;下一個字
+	SJMP SHOWDIE3
+SHOWWIN:
+	MOV A, #1 	 ;清除螢幕
+	ACALL COMMAND
+	ACALL DELAY2MS 	 ;等待執行結束
+	MOV A, #10000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 0
+	ACALL COMMAND
+	MOV DPTR, #WIN
+SHOWWIN1: 	 	 ;碰到旗子時，顯示贏的畫面
+	CLR A
+	MOVC A, @A+DPTR
+	JZ SHOWWIN2 	 ;第二列顯示也字樣
+	ACALL SDATA
+	INC DPTR 	 ;下一個字
+	SJMP SHOWWIN1
+SHOWWIN2:
+	MOV A,#11000000B ;設定 將 AC 指定給 DD RAM 使用，位址為 40H
+	ACALL COMMAND
+	MOV DPTR, #AGAIN
+SHOWWIN3:
+	CLR A
+	MOVC A, @A+DPTR
+	JZ WINSOUND 	 ;顯示完字幕之後，發出贏的音效
+	ACALL SDATA
+	INC DPTR 	 ;下一個字
+	SJMP SHOWWIN3
+;-----------------------------
+;結束的音效播放有兩種(勝利與死亡)
+DIESOUND:
+	MOV MCOUNT, #0 	 ;Music Counter
+	MOV B, #8 ;8 個音
+BEGIN1:
+	MOV DPTR, #DSCALE
+	MOV A, MCOUNT 	 ;從 SCALE 取得音調的商
+	MOVC A, @A+DPTR
+	MOV TONE1, A 	 ;商
+	INC MCOUNT
+	MOV A, MCOUNT 	 ;從 SCALE 取得音調的餘數
+	MOVC A, @A+DPTR
+	MOV TONE2, A 	 ;餘數
+	INC MCOUNT
+	MOV A, MCOUNT 	 ;從 SCALE 取得拍子資料
+	MOVC A, @A+DPTR
+	MOV TEMPO, A
+	MOV TH0, TONE1 	 ;計時器初始值
+	MOV TL0, TONE2
+	ACALL SOUND 	 ;發出聲音
+	INC MCOUNT
+	ACALL DELAY5MS
+	DJNZ B, BEGIN1
+	AJMP JMPSET
+WINSOUND:
+	MOV MCOUNT, #0 	 ;Music Counter
+	MOV B, #10 	 ;10 個音
+	JMP BEGIN
+DELAY:
+	ACALL DELAY35MS
+	INC MCOUNT
+BEGIN:
+	MOV DPTR, #WSCALE
+	MOV A, MCOUNT 	 ;從 SCALE 取得音調的 商
+	MOVC A, @A+DPTR
+	MOV TONE1, A 	 ;商
+	INC MCOUNT
+	MOV A, MCOUNT 	 ;從 SCALE 取得音調的餘數
+	MOVC A, @A+DPTR
+	MOV TONE2, A 	 ;餘數
+	INC MCOUNT
+	MOV A, MCOUNT 	 ;從 SCALE 取得拍子資料
+	MOVC A, @A+DPTR
+	MOV TEMPO, A
+	MOV TH0, TONE1 	 ;計時器初始值
+	MOV TL0, TONE2
+	ACALL SOUND 	 ;發出聲音
+	INC MCOUNT
+	ACALL DELAY5MS
+	DJNZ B,BEGIN
+	AJMP JMPSET
+SOUND:
+	MOV TIME, #2 	 ;兩個循環
+sound1:
+	SETB SPEAKER 	 ;SPEAKER ON
+	ACALL SDELAY 	 ;半週期
+	CLR SPEAKER 	 ;SPEAKER OFF
+	ACALL SDELAY
+	DJNZ TIME, sound1
+	DJNZ TEMPO, SOUND
+	RET
+SDELAY:
+	SETB TR0 	 ;開始計時
+	JNB TF0, $ 	 ;TF0=0 ，卡在這行程式，確認有無 overflow
+	CLR TF0 	 ;清掉 TF0
+	MOV TH0, TONE1 	 ;重給初始值
+	MOV TL0, TONE2
+	RET
+;-----------------------------
+;利用polling方式判斷勝利/死亡與否
+CHECKTHING:		   ;檢查是否碰到鬼或旗子
+	MOV R5, X
+	CJNE R5, #2, CHECKG1 ;鬼 X=2,Y=0
+	MOV R7, Y
+	CJNE R7, #0, CHECKG1
+	AJMP SHOWDIE 	   ;碰到這個點就顯示輸的畫面
+CHECKG1:
+	MOV R5, X
+	CJNE R5, #8, CHECKG2 ;鬼 X=8,Y=0
+	MOV R7, Y
+	CJNE R7, #0 ,CHECKG2
+	AJMP SHOWDIE	   ;碰到這個點就顯示輸的畫面
+CHECKG2:
+	MOV R5, X
+	CJNE R5, #23, CHECKG3 ;鬼 X=23,Y=0
+	MOV R7, Y
+	CJNE R7, #0, CHECKG3
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG3:
+	MOV R5, X
+	CJNE R5, #31, CHECKG4 ;鬼 X=31,Y=0
+	MOV R7, Y
+	CJNE R7, #0, CHECKG4
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG4:
+	MOV R5, X
+	CJNE R5, #32, CHECKG5 ;鬼 X=32,Y=0
+	MOV R7, Y
+	CJNE R7, #0, CHECKG5
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG5:
+	MOV R5, X
+	CJNE R5, #33, CHECKG6 ;鬼 X=33,Y=0
+	MOV R7, Y
+	CJNE R7, #0, CHECKG6
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG6:
+	MOV R5, X
+	CJNE R5, #6, CHECKG7  ;鬼 X=6,Y=1
+	MOV R7,Y
+	CJNE R7, #1, CHECKG7
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG7:
+	MOV R5, X
+	CJNE R5, #12, CHECKG8 ;鬼 X=12,Y=1
+	MOV R7, Y
+	CJNE R7, #1, CHECKG8
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG8:
+	MOV R5, X
+	CJNE R5, #19, CHECKG9 ;鬼 X=19,Y=1
+	MOV R7, Y
+	CJNE R7, #1, CHECKG9
+	AJMP SHOWDIE 	    ;碰到這個點就顯示輸的畫面
+CHECKG9:
+	MOV R5, X
+	CJNE R5, #28, CHECKG10 ;鬼 X=18,Y=1
+	MOV R7,Y
+	CJNE R7, #1, CHECKG10
+	AJMP SHOWDIE 	     ;碰到這個點就顯示輸的畫面
+CHECKG10:
+	MOV R5, X
+	CJNE R5, #37, CHECKF   ;鬼 X=37,Y=1
+	MOV R7, Y
+	CJNE R7, #1, CHECKF
+	AJMP SHOWDIE         ;碰到這個點就顯示輸的畫面
+CHECKF:
+	MOV R5, X
+	CJNE R5, #39, RETURN   ;旗子 X=39,Y=1
+	MOV R7, Y
+	CJNE R7, #1, RETURN
+	AJMP SHOWWIN 	     ;碰到這個點就顯示贏的畫面
+RETURN:
+	RET
+;-----------------------------
+;LCM的控制	
+COMMAND:
+	MOV P0, A
+	MOV P1, #00000100B ;Data Bus --> Instruction Register
+	ACALL DELAY40US
+	MOV P1, #00000000B
+	ACALL DELAY40US
+	RET
+SDATA:
+	MOV P0, A
+	MOV P1, #00000101B ;Data Bus --> Data Register --> DD RAM
+	ACALL DELAY40US
+	MOV P1, #00000001B
+	ACALL DELAY40US
+	RET
+;-----------------------------
+FONT:
+	DB 00000B ;小精靈向右的圖
+	DB 01110B
+	DB 11111B
+	DB 11100B
+	DB 11111B
+	DB 01110B
+	DB 00000B
+	DB 00000B
+	DB 00000B ;小精靈向下的圖
+	DB 01110B
+	DB 11111B
+	DB 11111B
+	DB 11011B
+	DB 01010B
+	DB 00000B
+	DB 00000B
+	DB 00000B ;小精靈向左的圖
+	DB 01110B
+	DB 11111B
+	DB 00111B
+	DB 11111B
+	DB 01110B
+	DB 00000B
+	DB 00000B
+	DB 00000B ;小精靈向上的圖
+	DB 01010B
+	DB 11011B
+	DB 11111B
+	DB 11111B
+	DB 01110B
+	DB 00000B
+	DB 00000B
+	DB 00000B ;鬼
+	DB 01110B
+	DB 11111B
+	DB 10101B
+	DB 11111B
+	DB 10101B
+	DB 00000B
+	DB 00000B
+	DB 00000B ;終點旗子
+	DB 00100B
+	DB 00110B
+	DB 00111B
+	DB 00100B
+	DB 11111B
+	DB 00000B
+	DB 00000B
+DIE:
+	DB "You Lose!",0
+WIN:
+	DB "You Win!",0
+AGAIN:
+	DB "One More Game!",0
+WSCALE:
+	DB 242, 19, 116 ;7
+	DB 242, 19, 116 ;7
+	DB 0
+	DB 244, 3, 131  ;1
+	DB 245, 12, 147 ;2
+	DB 245, 12, 147 ;2
+	DB 244, 3, 131  ;1
+	DB 245, 12, 147 ;2
+	DB 245, 12, 147 ;2
+	DB 245, 12, 147 ;2
+	DB 245, 12, 147 ;2
+DSCALE:
+	DB 240, 2, 98  ;5
+	DB 240, 2, 98  ;5
+	DB 240, 2, 98  ;5
+	DB 218, 4, 82  ;3
+	DB 238, 5, 87  ;4
+	DB 238, 5, 87  ;4
+	DB 238, 5, 87  ;4
+	DB 170, 31, 73 ;2
+;-----------------------------
+DELAY40US:
+	MOV R0, #120
+    DJNZ R0, $
+	RET
+DELAY5MS:
+	ACALL DELAY1MS
+	ACALL DELAY2MS
+	ACALL DELAY2MS
+	RET
+DELAY2MS:
+	ACALL DELAY1MS
+	ACALL DELAY1MS
+	RET
+DELAY1MS:
+	MOV R1, #25
+DELAY1MS1:
+	ACALL DELAY40US
+	DJNZ R1,DELAY1MS1
+	RET
+DELAY35MS:
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	ACALL DELAY5MS
+	RET
+DELAY500MS: 
+	MOV REG8, #100
+DELAY500MS1: 
+	ACALL DELAY1MS
+    ACALL DELAY1MS
+    ACALL DELAY1MS
+    ACALL DELAY1MS
+    DJNZ REG8,DELAY500MS1
+    RET
+	
+	END

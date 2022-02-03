@@ -1,0 +1,1525 @@
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.01
+OBJECT MODULE PLACED IN final.OBJ
+ASSEMBLER INVOKED BY: E:\tools\Keil\C51\BIN\A51.EXE final.asm SET(SMALL) DEBUG EP
+
+LOC  OBJ            LINE     SOURCE
+
+0000                   1             ORG 0000H
+0000 0150              2             AJMP MAIN
+000B                   3             ORG 000BH
+000B 020563            4             LJMP INTERRUPT
+0050                   5             ORG 0050H
+                       6             
+                       7             ;P0, P1 點陣圖
+                       8             ;P2 鍵盤
+                       9     
+                      10     ;========設初值=========
+                      11     
+0050                  12     MAIN:
+0050 900758           13             MOV DPTR, #TETRIS       ;紀錄產生方塊
+                      14             
+0053 C2D3             15             CLR RS0         ;儲存落下方塊
+0055 C2D4             16             CLR RS1 
+0057 7800             17             MOV R0, #00H
+0059 7D02             18             MOV R5, #00000010B
+005B 7C0E             19             MOV R4, #00001110B
+005D 7900             20             MOV R1, #00H
+005F 7A00             21             MOV R2, #00H
+0061 7D00             22             MOV R5, #00H
+0063 7E00             23             MOV R6, #00H
+0065 7F00             24             MOV R7, #00H
+                      25     
+0067 D2D3             26             SETB RS0        ;儲存當前方塊
+0069 C2D4             27         CLR RS1
+006B 7800             28             MOV R0, #00H
+006D 7900             29             MOV R1, #00H
+006F 7A00             30             MOV R2, #00H
+0071 7B00             31             MOV R3, #00H
+0073 7C00             32             MOV R4, #00H
+0075 7D00             33             MOV R5, #00H
+0077 7E00             34             MOV R6, #00H
+0079 7F00             35             MOV R7, #00H
+                      36             
+007B D2D3             37             SETB RS0        ;儲存其他資訊
+007D D2D4             38             SETB RS1
+007F 7801             39             MOV R0, #01H    ;紀錄亮第幾行
+                      40             
+0081 758901           41             MOV TMOD, #1
+0084 D2A9             42             SETB ET0
+0086 D2B9             43             SETB PT0
+0088 C28D             44             CLR TF0
+008A 7905             45             MOV R1, #5      ;50ms * 8 = 400ms
+008C 758AB0           46             MOV TL0, #176   ;(65536-50ms/1us)%256
+008F 758C3C           47             MOV TH0, #60    ;(65536-50ms/1us)/256
+0092 D2AF             48             SETB EA
+0094 D28C             49             SETB TR0
+                      50             
+0096 7A00             51             MOV R2, #00H    ;決定新方塊
+                      52     
+                      53     ;========矩陣燈顯示=========
+                      54     
+0098                  55     CON_SHOW:
+0098 D2D3             56             SETB RS0
+009A D2D4             57             SETB RS1
+009C 758000           58             MOV P0, #0      ;將點陣圖清除
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     2
+
+009F F13F             59             ACALL DELAY
+00A1 11B7             60             ACALL SHOW_TERIS7
+00A3 8880             61             MOV P0, R0              ;決定第幾行亮
+00A5 F13F             62             ACALL DELAY
+00A7 D2D3             63             SETB RS0
+00A9 D2D4             64             SETB RS1
+00AB E8               65             MOV A, R0               ;設定為亮下一行
+00AC 23               66             RL A
+00AD F8               67             MOV R0, A
+00AE B820E7           68             CJNE R0, #32, CON_SHOW  ;看是否五行都亮完了
+00B1 7801             69             MOV R0, #01H    
+00B3 21D3             70             AJMP ROW1
+00B5 0198             71             AJMP CON_SHOW
+                      72     
+00B7                  73     SHOW_TERIS7:    
+00B7 D2D3             74             SETB RS0        ;當前方塊
+00B9 C2D4             75             CLR RS1
+00BB EF               76             MOV A, R7
+00BC D2D3             77             SETB RS0
+00BE D2D4             78             SETB RS1
+00C0 58               79             ANL A, R0
+00C1 F5F0             80             MOV B, A        ;先儲存當前結果
+                      81             
+00C3 C2D3             82             CLR RS0         ;落下方塊
+00C5 C2D4             83             CLR RS1
+00C7 EF               84             MOV A, R7
+00C8 D2D3             85             SETB RS0
+00CA D2D4             86             SETB RS1
+00CC 58               87             ANL A, R0
+00CD C2D3             88             CLR RS0
+00CF C2D4             89             CLR RS1
+00D1 A8F0             90             MOV R0, B
+00D3 48               91             ORL A, R0
+00D4 31C9             92             ACALL TRIGHT
+00D6 23               93             RL A
+                      94     
+00D7                  95     SHOW_TERIS6:
+00D7 C0E0             96             PUSH ACC
+00D9 D2D3             97             SETB RS0        ;當前方塊
+00DB C2D4             98             CLR RS1
+00DD EE               99             MOV A, R6
+00DE D2D3            100             SETB RS0
+00E0 D2D4            101             SETB RS1
+00E2 58              102             ANL A, R0
+00E3 F5F0            103             MOV B, A        ;先儲存當前結果
+                     104             
+00E5 C2D3            105             CLR RS0         ;落下方塊
+00E7 C2D4            106             CLR RS1
+00E9 EE              107             MOV A, R6
+00EA D2D3            108             SETB RS0
+00EC D2D4            109             SETB RS1
+00EE 58              110             ANL A, R0
+00EF C2D3            111             CLR RS0
+00F1 C2D4            112             CLR RS1
+00F3 A8F0            113             MOV R0, B
+00F5 48              114             ORL A, R0
+00F6 31C9            115             ACALL TRIGHT
+00F8 F5F0            116             MOV B, A
+00FA D0E0            117             POP ACC
+00FC 25F0            118             ADD A, B
+00FE 23              119             RL A
+                     120     
+00FF                 121     SHOW_TERIS5:
+00FF C0E0            122             PUSH ACC
+0101 D2D3            123             SETB RS0        ;當前方塊
+0103 C2D4            124             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     3
+
+0105 ED              125             MOV A, R5
+0106 D2D3            126             SETB RS0
+0108 D2D4            127             SETB RS1
+010A 58              128             ANL A, R0
+010B F5F0            129             MOV B, A        ;先儲存當前結果
+                     130             
+010D C2D3            131             CLR RS0         ;落下方塊
+010F C2D4            132             CLR RS1
+0111 ED              133             MOV A, R5
+0112 D2D3            134             SETB RS0
+0114 D2D4            135             SETB RS1
+0116 58              136             ANL A, R0
+0117 C2D3            137             CLR RS0
+0119 C2D4            138             CLR RS1
+011B A8F0            139             MOV R0, B
+011D 48              140             ORL A, R0
+011E 31C9            141             ACALL TRIGHT
+0120 F5F0            142             MOV B, A
+0122 D0E0            143             POP ACC
+0124 25F0            144             ADD A, B
+0126 23              145             RL A
+                     146     
+0127                 147     SHOW_TERIS4:
+0127 C0E0            148             PUSH ACC
+0129 D2D3            149             SETB RS0        ;當前方塊
+012B C2D4            150             CLR RS1
+012D EC              151             MOV A, R4
+012E D2D3            152             SETB RS0
+0130 D2D4            153             SETB RS1
+0132 58              154             ANL A, R0
+0133 F5F0            155             MOV B, A        ;先儲存當前結果
+                     156             
+0135 C2D3            157             CLR RS0         ;落下方塊
+0137 C2D4            158             CLR RS1
+0139 EC              159             MOV A, R4
+013A D2D3            160             SETB RS0
+013C D2D4            161             SETB RS1
+013E 58              162             ANL A, R0
+013F C2D3            163             CLR RS0
+0141 C2D4            164             CLR RS1
+0143 A8F0            165             MOV R0, B
+0145 48              166             ORL A, R0
+0146 31C9            167             ACALL TRIGHT
+0148 F5F0            168             MOV B, A
+014A D0E0            169             POP ACC
+014C 25F0            170             ADD A, B
+014E 23              171             RL A
+                     172     
+014F                 173     SHOW_TERIS3:
+014F C0E0            174             PUSH ACC
+0151 D2D3            175             SETB RS0        ;當前方塊
+0153 C2D4            176             CLR RS1
+0155 EB              177             MOV A, R3
+0156 D2D3            178             SETB RS0
+0158 D2D4            179             SETB RS1
+015A 58              180             ANL A, R0
+015B F5F0            181             MOV B, A        ;先儲存當前結果
+                     182             
+015D C2D3            183             CLR RS0         ;落下方塊
+015F C2D4            184             CLR RS1
+0161 EB              185             MOV A, R3
+0162 D2D3            186             SETB RS0
+0164 D2D4            187             SETB RS1
+0166 58              188             ANL A, R0
+0167 C2D3            189             CLR RS0
+0169 C2D4            190             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     4
+
+016B A8F0            191             MOV R0, B
+016D 48              192             ORL A, R0
+016E 31C9            193             ACALL TRIGHT
+0170 F5F0            194             MOV B, A
+0172 D0E0            195             POP ACC
+0174 25F0            196             ADD A, B
+0176 23              197             RL A
+                     198     
+0177                 199     SHOW_TERIS2:
+0177 C0E0            200             PUSH ACC
+0179 D2D3            201             SETB RS0        ;當前方塊
+017B C2D4            202             CLR RS1
+017D EA              203             MOV A, R2
+017E D2D3            204             SETB RS0
+0180 D2D4            205             SETB RS1
+0182 58              206             ANL A, R0
+0183 F5F0            207             MOV B, A        ;先儲存當前結果
+                     208             
+0185 C2D3            209             CLR RS0         ;落下方塊
+0187 C2D4            210             CLR RS1
+0189 EA              211             MOV A, R2
+018A D2D3            212             SETB RS0
+018C D2D4            213             SETB RS1
+018E 58              214             ANL A, R0
+018F C2D3            215             CLR RS0
+0191 C2D4            216             CLR RS1
+0193 A8F0            217             MOV R0, B
+0195 48              218             ORL A, R0
+0196 31C9            219             ACALL TRIGHT
+0198 F5F0            220             MOV B, A
+019A D0E0            221             POP ACC
+019C 25F0            222             ADD A, B
+019E 23              223             RL A
+                     224     
+019F                 225     SHOW_TERIS1:
+019F C0E0            226             PUSH ACC
+01A1 D2D3            227             SETB RS0        ;當前方塊
+01A3 C2D4            228             CLR RS1
+01A5 E9              229             MOV A, R1
+01A6 D2D3            230             SETB RS0
+01A8 D2D4            231             SETB RS1
+01AA 58              232             ANL A, R0
+01AB F5F0            233             MOV B, A        ;先儲存當前結果
+                     234             
+01AD C2D3            235             CLR RS0         ;落下方塊
+01AF C2D4            236             CLR RS1
+01B1 E9              237             MOV A, R1
+01B2 D2D3            238             SETB RS0
+01B4 D2D4            239             SETB RS1
+01B6 58              240             ANL A, R0
+01B7 C2D3            241             CLR RS0
+01B9 C2D4            242             CLR RS1
+01BB A8F0            243             MOV R0, B
+01BD 48              244             ORL A, R0
+01BE 31C9            245             ACALL TRIGHT
+01C0 F5F0            246             MOV B, A
+01C2 D0E0            247             POP ACC
+01C4 25F0            248             ADD A, B
+01C6 F590            249             MOV P1, A       ;顯示
+                     250             
+01C8 22              251             RET
+                     252     
+01C9                 253     TRIGHT:
+01C9 6004            254             JZ RETURN_1
+01CB 03              255             RR A
+01CC B401FA          256             CJNE A, #1, TRIGHT
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     5
+
+                     257     
+01CF                 258     RETURN_1:
+01CF 22              259             RET
+                     260             
+01D0                 261     DD:     
+01D0 020098          262             LJMP CON_SHOW
+                     263     
+                     264     ;========鍵盤控制========
+                     265     
+01D3                 266     ROW1:                   ;掃鍵盤
+01D3 D2D3            267             SETB RS0
+01D5 D2D4            268             SETB RS1
+                     269             
+01D7 75A07F          270         MOV P2, #01111111B
+01DA F13F            271         ACALL DELAY
+01DC E5A0            272         MOV A, P2
+01DE 540F            273         ANL A, #00001111B
+01E0 7A00            274         MOV R2, #0
+01E2 B40F2D          275         CJNE A, #00001111B, COL1
+                     276     
+01E5                 277     ROW2:
+01E5 75A0BF          278         MOV P2, #10111111B
+01E8 F13F            279         ACALL DELAY
+01EA E5A0            280         MOV A, P2
+01EC 540F            281         ANL A, #00001111B
+01EE 7A01            282         MOV R2, #1
+01F0 B40F1F          283         CJNE A, #00001111B, COL1
+                     284     
+01F3                 285     ROW3:
+01F3 75A0DF          286         MOV P2, #11011111B
+01F6 F13F            287         ACALL DELAY
+01F8 E5A0            288         MOV A, P2
+01FA 540F            289         ANL A, #00001111B
+01FC 7A02            290         MOV R2, #2
+01FE B40F11          291         CJNE A, #00001111B, COL1
+                     292     
+0201                 293     ROW4:
+0201 75A0EF          294         MOV P2, #11101111B
+0204 F13F            295         ACALL DELAY
+0206 E5A0            296         MOV A, P2
+0208 540F            297         ANL A, #00001111B
+020A 7A03            298         MOV R2, #3
+020C B40F03          299         CJNE A, #00001111B, COL1
+020F 020098          300         LJMP CON_SHOW
+                     301             
+0212                 302     COL1:
+0212 B40E04          303         CJNE A, #00001110B, COL2
+0215 7B00            304         MOV R3, #0
+0217 800C            305         JMP BUTTON
+                     306     
+0219                 307     COL2:
+0219 B40D04          308         CJNE A, #00001101B, COL3
+021C 7B04            309         MOV R3, #4
+021E 8005            310         JMP BUTTON
+                     311     
+0220                 312     COL3:
+0220 B40BAD          313         CJNE A, #00001011B, DD
+0223 7B08            314         MOV R3, #8
+                     315     
+0225                 316     BUTTON:
+0225 EA              317             MOV A, R2       ;判斷按哪個鍵
+0226 2B              318         ADD A, R3
+                     319             
+0227 FA              320             MOV R2, A       ;上
+0228 6401            321             XRL A, #1
+022A 6012            322         JZ ROTATE
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     6
+
+                     323             
+022C FA              324             MOV R2, A       ;左
+022D 6404            325             XRL A, #4
+022F 600D            326         JZ LEFT
+                     327             
+0231 FA              328             MOV R2, A       ;右
+0232 6406            329             XRL A, #6
+0234 600D            330         JZ RIGHT
+                     331             
+0236 FA              332             MOV R2, A       ;下
+0237 6409            333             XRL A, #9
+0239 600D            334         JZ ACCELATION
+                     335             
+023B 020098          336             LJMP CON_SHOW
+                     337             
+023E                 338     ROTATE:
+                     339             
+                     340             
+023E                 341     LEFT:
+023E 5174            342             ACALL LBOUNDRY
+0240 020098          343             LJMP CON_SHOW
+                     344             
+0243                 345     RIGHT:  
+0243 71FD            346             ACALL RBOUNDRY
+0245 020098          347             LJMP CON_SHOW
+                     348     
+0248                 349     ACCELATION:
+0248 D2D3            350             SETB RS0
+024A D2D4            351             SETB RS1
+024C 7905            352             MOV R1, #5
+024E 020098          353             LJMP CON_SHOW
+                     354     
+0251                 355     LB7:
+0251 C2D3            356             CLR RS0
+0253 C2D4            357             CLR RS1
+0255 7F03            358             MOV R7, #3
+0257 120315          359             LCALL CHECK_L7
+025A 120331          360             LCALL CHECK_L6
+025D 12034D          361             LCALL CHECK_L5
+0260 C2D3            362             CLR RS0
+0262 C2D4            363             CLR RS1
+0264 DF22            364             DJNZ R7, RETURN_3
+                     365             
+0266 C2D3            366             CLR RS0
+0268 C2D4            367             CLR RS1
+026A EE              368             MOV A, R6
+026B 03              369             RR A
+026C FE              370             MOV R6, A
+                     371             
+026D ED              372             MOV A, R5
+026E 03              373             RR A
+026F FD              374             MOV R5, A
+                     375             
+0270 EC              376             MOV A, R4
+0271 03              377             RR A
+0272 FC              378             MOV R4, A
+                     379             
+0273 22              380             RET
+                     381     
+0274                 382     LBOUNDRY:
+0274 C2D3            383             CLR RS0
+0276 C2D4            384             CLR RS1
+                     385             
+0278 EE              386             MOV A, R6
+0279 70D6            387             JNZ LB7
+                     388             
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     7
+
+027B ED              389             MOV A, R5
+027C 700B            390             JNZ LB6
+                     391             
+027E EC              392             MOV A, R4
+027F 702B            393             JNZ LB5
+                     394             
+0281 EB              395             MOV A, R3
+0282 704B            396             JNZ LB4
+                     397             
+0284 EA              398             MOV A, R2
+0285 706B            399             JNZ LB3
+                     400             
+0287 22              401             RET
+                     402     
+0288                 403     RETURN_3:
+0288 22              404             RET
+                     405     
+0289                 406     LB6:
+0289 C2D3            407             CLR RS0
+028B C2D4            408             CLR RS1
+028D 7F03            409             MOV R7, #3
+028F 120331          410             LCALL CHECK_L6
+0292 12034D          411             LCALL CHECK_L5
+0295 12036A          412             LCALL CHECK_L4
+0298 C2D3            413             CLR RS0
+029A C2D4            414             CLR RS1
+029C DFEA            415             DJNZ R7, RETURN_3
+                     416             
+029E C2D3            417             CLR RS0
+02A0 C2D4            418             CLR RS1
+02A2 ED              419             MOV A, R5
+02A3 03              420             RR A
+02A4 FD              421             MOV R5, A
+                     422             
+02A5 EC              423             MOV A, R4
+02A6 03              424             RR A
+02A7 FC              425             MOV R4, A
+                     426             
+02A8 EB              427             MOV A, R3
+02A9 03              428             RR A
+02AA FB              429             MOV R3, A
+                     430             
+02AB 22              431             RET
+                     432     
+02AC                 433     LB5:
+02AC C2D3            434             CLR RS0
+02AE C2D4            435             CLR RS1
+02B0 7F03            436             MOV R7, #3
+02B2 12034D          437             LCALL CHECK_L5
+02B5 12036A          438             LCALL CHECK_L4
+02B8 120386          439             LCALL CHECK_L3
+02BB C2D3            440             CLR RS0
+02BD C2D4            441             CLR RS1
+02BF DFC7            442             DJNZ R7, RETURN_3
+                     443             
+02C1 C2D3            444             CLR RS0
+02C3 C2D4            445             CLR RS1
+02C5 EC              446             MOV A, R4
+02C6 03              447             RR A
+02C7 FC              448             MOV R4, A
+                     449             
+02C8 EB              450             MOV A, R3
+02C9 03              451             RR A
+02CA FB              452             MOV R3, A
+                     453             
+02CB EA              454             MOV A, R2
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     8
+
+02CC 03              455             RR A
+02CD FA              456             MOV R2, A
+                     457             
+02CE 22              458             RET
+                     459             
+02CF                 460     LB4:
+02CF C2D3            461             CLR RS0
+02D1 C2D4            462             CLR RS1
+02D3 7F03            463             MOV R7, #3
+02D5 12036A          464             LCALL CHECK_L4
+02D8 120386          465             LCALL CHECK_L3
+02DB 1203A2          466             LCALL CHECK_L2
+02DE C2D3            467             CLR RS0
+02E0 C2D4            468             CLR RS1
+02E2 DFA4            469             DJNZ R7, RETURN_3
+                     470             
+02E4 C2D3            471             CLR RS0
+02E6 C2D4            472             CLR RS1
+02E8 EB              473             MOV A, R3
+02E9 03              474             RR A
+02EA FB              475             MOV R3, A
+                     476             
+02EB EA              477             MOV A, R2
+02EC 03              478             RR A
+02ED FA              479             MOV R2, A
+                     480             
+02EE E9              481             MOV A, R1
+02EF 03              482             RR A
+02F0 F9              483             MOV R1, A
+                     484             
+02F1 22              485             RET
+                     486     
+02F2                 487     LB3:
+02F2 C2D3            488             CLR RS0
+02F4 C2D4            489             CLR RS1
+02F6 7F03            490             MOV R7, #3
+02F8 120386          491             LCALL CHECK_L3
+02FB 1203A2          492             LCALL CHECK_L2
+02FE 1203BE          493             LCALL CHECK_L1
+0301 C2D3            494             CLR RS0
+0303 C2D4            495             CLR RS1
+0305 DF81            496             DJNZ R7, RETURN_3
+                     497             
+0307 C2D3            498             CLR RS0
+0309 C2D4            499             CLR RS1
+030B EA              500             MOV A, R2
+030C 03              501             RR A
+030D FA              502             MOV R2, A
+                     503             
+030E E9              504             MOV A, R1
+030F 03              505             RR A
+0310 F9              506             MOV R1, A
+                     507             
+0311 E8              508             MOV A, R0
+0312 03              509             RR A
+0313 F8              510             MOV R0, A
+                     511             
+0314 22              512             RET
+                     513     
+0315                 514     CHECK_L7:
+0315 C2D3            515             CLR RS0
+0317 C2D4            516             CLR RS1 
+0319 EE              517             MOV A, R6
+031A 5401            518             ANL A, #1
+031C 704B            519             JNZ RETURN_4
+                     520             
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE     9
+
+031E C2D3            521             CLR RS0
+0320 C2D4            522             CLR RS1
+0322 EE              523             MOV A, R6
+0323 03              524             RR A
+0324 D2D3            525             SETB RS0
+0326 C2D4            526             CLR RS1
+0328 5E              527             ANL A, R6
+0329 703E            528             JNZ RETURN_4
+                     529             
+032B C2D3            530             CLR RS0
+032D C2D4            531             CLR RS1
+032F 1F              532             DEC R7
+                     533             
+0330 22              534             RET
+                     535             
+0331                 536     CHECK_L6:
+0331 C2D3            537             CLR RS0
+0333 C2D4            538             CLR RS1
+0335 ED              539             MOV A, R5
+0336 5401            540             ANL A, #1
+0338 702F            541             JNZ RETURN_4
+                     542             
+033A C2D3            543             CLR RS0
+033C C2D4            544             CLR RS1
+033E ED              545             MOV A, R5
+033F 03              546             RR A
+0340 D2D3            547             SETB RS0
+0342 C2D4            548             CLR RS1
+0344 5D              549             ANL A, R5
+0345 7022            550             JNZ RETURN_4
+                     551             
+0347 C2D3            552             CLR RS0
+0349 C2D4            553             CLR RS1
+034B 1F              554             DEC R7
+                     555             
+034C 22              556             RET
+                     557     
+034D                 558     CHECK_L5:
+034D C2D3            559             CLR RS0
+034F C2D4            560             CLR RS1
+0351 EC              561             MOV A, R4
+0352 5401            562             ANL A, #1
+0354 7013            563             JNZ RETURN_4
+                     564             
+0356 C2D3            565             CLR RS0
+0358 C2D4            566             CLR RS1
+035A EC              567             MOV A, R4
+035B 03              568             RR A
+035C D2D3            569             SETB RS0
+035E C2D4            570             CLR RS1
+0360 5C              571             ANL A, R4
+0361 7006            572             JNZ RETURN_4
+                     573             
+0363 C2D3            574             CLR RS0
+0365 C2D4            575             CLR RS1
+0367 1F              576             DEC R7
+                     577             
+0368 22              578             RET
+                     579     
+0369                 580     RETURN_4:
+0369 22              581             RET
+                     582     
+036A                 583     CHECK_L4:
+036A C2D3            584             CLR RS0
+036C C2D4            585             CLR RS1
+036E EB              586             MOV A, R3
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    10
+
+036F 5401            587             ANL A, #1
+0371 70F6            588             JNZ RETURN_4
+                     589             
+0373 C2D3            590             CLR RS0
+0375 C2D4            591             CLR RS1
+0377 EB              592             MOV A, R3
+0378 03              593             RR A
+0379 D2D3            594             SETB RS0
+037B C2D4            595             CLR RS1
+037D 5B              596             ANL A, R3
+037E 70E9            597             JNZ RETURN_4
+                     598             
+0380 C2D3            599             CLR RS0
+0382 C2D4            600             CLR RS1
+0384 1F              601             DEC R7
+                     602             
+0385 22              603             RET
+                     604             
+0386                 605     CHECK_L3:
+0386 C2D3            606             CLR RS0
+0388 C2D4            607             CLR RS1
+038A EA              608             MOV A, R2
+038B 5401            609             ANL A, #1
+038D 70DA            610             JNZ RETURN_4
+                     611             
+038F C2D3            612             CLR RS0
+0391 C2D4            613             CLR RS1
+0393 EA              614             MOV A, R2
+0394 03              615             RR A
+0395 D2D3            616             SETB RS0
+0397 C2D4            617             CLR RS1
+0399 5A              618             ANL A, R2
+039A 70CD            619             JNZ RETURN_4
+                     620             
+039C C2D3            621             CLR RS0
+039E C2D4            622             CLR RS1
+03A0 1F              623             DEC R7
+                     624             
+03A1 22              625             RET
+                     626             
+03A2                 627     CHECK_L2:
+03A2 C2D3            628             CLR RS0
+03A4 C2D4            629             CLR RS1
+03A6 E9              630             MOV A, R1
+03A7 5401            631             ANL A, #1
+03A9 70BE            632             JNZ RETURN_4
+                     633             
+03AB C2D3            634             CLR RS0
+03AD C2D4            635             CLR RS1
+03AF E9              636             MOV A, R1
+03B0 03              637             RR A
+03B1 D2D3            638             SETB RS0
+03B3 C2D4            639             CLR RS1
+03B5 59              640             ANL A, R1
+03B6 70B1            641             JNZ RETURN_4
+                     642             
+03B8 C2D3            643             CLR RS0
+03BA C2D4            644             CLR RS1
+03BC 1F              645             DEC R7
+                     646             
+03BD 22              647             RET
+                     648             
+03BE                 649     CHECK_L1:
+03BE C2D3            650             CLR RS0
+03C0 C2D4            651             CLR RS1
+03C2 E8              652             MOV A, R0
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    11
+
+03C3 5401            653             ANL A, #1
+03C5 70A2            654             JNZ RETURN_4
+                     655             
+03C7 C2D3            656             CLR RS0
+03C9 C2D4            657             CLR RS1
+03CB E8              658             MOV A, R0
+03CC 03              659             RR A
+03CD D2D3            660             SETB RS0
+03CF C2D4            661             CLR RS1
+03D1 5D              662             ANL A, R5
+03D2 7095            663             JNZ RETURN_4
+                     664             
+03D4 C2D3            665             CLR RS0
+03D6 C2D4            666             CLR RS1
+03D8 1F              667             DEC R7
+                     668             
+03D9 22              669             RET
+                     670             
+03DA                 671     RB7:
+03DA C2D3            672             CLR RS0
+03DC C2D4            673             CLR RS1
+03DE 7F03            674             MOV R7, #3
+03E0 12049E          675             LCALL CHECK_R7
+03E3 1204BA          676             LCALL CHECK_R6
+03E6 1204D6          677             LCALL CHECK_R5
+03E9 C2D3            678             CLR RS0
+03EB C2D4            679             CLR RS1
+03ED DF22            680             DJNZ R7, RETURN_5
+                     681             
+03EF C2D3            682             CLR RS0
+03F1 C2D4            683             CLR RS1
+03F3 EE              684             MOV A, R6
+03F4 23              685             RL A
+03F5 FE              686             MOV R6, A
+                     687             
+03F6 ED              688             MOV A, R5
+03F7 23              689             RL A
+03F8 FD              690             MOV R5, A
+                     691             
+03F9 EC              692             MOV A, R4
+03FA 23              693             RL A
+03FB FC              694             MOV R4, A
+                     695             
+03FC 22              696             RET
+                     697     
+03FD                 698     RBOUNDRY:
+03FD C2D3            699             CLR RS0
+03FF C2D4            700             CLR RS1
+                     701             
+0401 EE              702             MOV A, R6
+0402 70D6            703             JNZ RB7
+                     704             
+0404 ED              705             MOV A, R5
+0405 700B            706             JNZ RB6
+                     707             
+0407 EC              708             MOV A, R4
+0408 702B            709             JNZ RB5
+                     710             
+040A EB              711             MOV A, R3
+040B 704B            712             JNZ RB4
+                     713             
+040D EA              714             MOV A, R2
+040E 706B            715             JNZ RB3
+                     716             
+0410 22              717             RET
+                     718     
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    12
+
+0411                 719     RETURN_5:
+0411 22              720             RET
+                     721     
+0412                 722     RB6:
+0412 C2D3            723             CLR RS0
+0414 C2D4            724             CLR RS1
+0416 7F03            725             MOV R7, #3
+0418 1204BA          726             LCALL CHECK_R6
+041B 1204D6          727             LCALL CHECK_R5
+041E 1204F3          728             LCALL CHECK_R4
+0421 C2D3            729             CLR RS0
+0423 C2D4            730             CLR RS1
+0425 DFEA            731             DJNZ R7, RETURN_5
+                     732             
+0427 C2D3            733             CLR RS0
+0429 C2D4            734             CLR RS1
+042B ED              735             MOV A, R5
+042C 23              736             RL A
+042D FD              737             MOV R5, A
+                     738             
+042E EC              739             MOV A, R4
+042F 23              740             RL A
+0430 FC              741             MOV R4, A
+                     742             
+0431 EB              743             MOV A, R3
+0432 23              744             RL A
+0433 FB              745             MOV R3, A
+                     746             
+0434 22              747             RET
+                     748     
+0435                 749     RB5:
+0435 C2D3            750             CLR RS0
+0437 C2D4            751             CLR RS1
+0439 7F03            752             MOV R7, #3
+043B 1204D6          753             LCALL CHECK_R5
+043E 1204F3          754             LCALL CHECK_R4
+0441 12050F          755             LCALL CHECK_R3
+0444 C2D3            756             CLR RS0
+0446 C2D4            757             CLR RS1
+0448 DFC7            758             DJNZ R7, RETURN_5
+                     759             
+044A C2D3            760             CLR RS0
+044C C2D4            761             CLR RS1
+044E EC              762             MOV A, R4
+044F 23              763             RL A
+0450 FC              764             MOV R4, A
+                     765             
+0451 EB              766             MOV A, R3
+0452 23              767             RL A
+0453 FB              768             MOV R3, A
+                     769             
+0454 EA              770             MOV A, R2
+0455 23              771             RL A
+0456 FA              772             MOV R2, A
+                     773             
+0457 22              774             RET
+                     775     
+0458                 776     RB4:
+0458 C2D3            777             CLR RS0
+045A C2D4            778             CLR RS1
+045C 7F03            779             MOV R7, #3
+045E 1204F3          780             LCALL CHECK_R4
+0461 12050F          781             LCALL CHECK_R3
+0464 12052B          782             LCALL CHECK_R2
+0467 C2D3            783             CLR RS0
+0469 C2D4            784             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    13
+
+046B DFA4            785             DJNZ R7, RETURN_5
+                     786             
+046D C2D3            787             CLR RS0
+046F C2D4            788             CLR RS1
+0471 EB              789             MOV A, R3
+0472 23              790             RL A
+0473 FB              791             MOV R3, A
+                     792             
+0474 EA              793             MOV A, R2
+0475 23              794             RL A
+0476 FA              795             MOV R2, A
+                     796             
+0477 E9              797             MOV A, R1
+0478 23              798             RL A
+0479 F9              799             MOV R1, A
+                     800             
+047A 22              801             RET
+                     802     
+047B                 803     RB3:
+047B C2D3            804             CLR RS0
+047D C2D4            805             CLR RS1
+047F 7F03            806             MOV R7, #3
+0481 120386          807             LCALL CHECK_L3
+0484 1203A2          808             LCALL CHECK_L2
+0487 1203BE          809             LCALL CHECK_L1
+048A C2D3            810             CLR RS0
+048C C2D4            811             CLR RS1
+048E DF81            812             DJNZ R7, RETURN_5
+                     813             
+0490 C2D3            814             CLR RS0
+0492 C2D4            815             CLR RS1
+0494 EA              816             MOV A, R2
+0495 23              817             RL A
+0496 FA              818             MOV R2, A
+                     819             
+0497 E9              820             MOV A, R1
+0498 23              821             RL A
+0499 F9              822             MOV R1, A
+                     823             
+049A E8              824             MOV A, R0
+049B 23              825             RL A
+049C F8              826             MOV R0, A
+                     827             
+049D 22              828             RET
+                     829     
+049E                 830     CHECK_R7:
+049E C2D3            831             CLR RS0
+04A0 C2D4            832             CLR RS1 
+04A2 EE              833             MOV A, R6
+04A3 5401            834             ANL A, #1
+04A5 704B            835             JNZ RETURN_6
+                     836             
+04A7 C2D3            837             CLR RS0
+04A9 C2D4            838             CLR RS1
+04AB EE              839             MOV A, R6
+04AC 23              840             RL A
+04AD D2D3            841             SETB RS0
+04AF C2D4            842             CLR RS1
+04B1 5E              843             ANL A, R6
+04B2 703E            844             JNZ RETURN_6
+                     845             
+04B4 C2D3            846             CLR RS0
+04B6 C2D4            847             CLR RS1
+04B8 1F              848             DEC R7
+                     849             
+04B9 22              850             RET
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    14
+
+                     851             
+04BA                 852     CHECK_R6:
+04BA C2D3            853             CLR RS0
+04BC C2D4            854             CLR RS1
+04BE ED              855             MOV A, R5
+04BF 5401            856             ANL A, #1
+04C1 702F            857             JNZ RETURN_6
+                     858             
+04C3 C2D3            859             CLR RS0
+04C5 C2D4            860             CLR RS1
+04C7 ED              861             MOV A, R5
+04C8 23              862             RL A
+04C9 D2D3            863             SETB RS0
+04CB C2D4            864             CLR RS1
+04CD 5D              865             ANL A, R5
+04CE 7022            866             JNZ RETURN_6
+                     867             
+04D0 C2D3            868             CLR RS0
+04D2 C2D4            869             CLR RS1
+04D4 1F              870             DEC R7
+                     871             
+04D5 22              872             RET
+                     873     
+04D6                 874     CHECK_R5:
+04D6 C2D3            875             CLR RS0
+04D8 C2D4            876             CLR RS1
+04DA EC              877             MOV A, R4
+04DB 5401            878             ANL A, #1
+04DD 7013            879             JNZ RETURN_6
+                     880             
+04DF C2D3            881             CLR RS0
+04E1 C2D4            882             CLR RS1
+04E3 EC              883             MOV A, R4
+04E4 23              884             RL A
+04E5 D2D3            885             SETB RS0
+04E7 C2D4            886             CLR RS1
+04E9 5C              887             ANL A, R4
+04EA 7006            888             JNZ RETURN_6
+                     889             
+04EC C2D3            890             CLR RS0
+04EE C2D4            891             CLR RS1
+04F0 1F              892             DEC R7
+                     893             
+04F1 22              894             RET
+                     895     
+04F2                 896     RETURN_6:
+04F2 22              897             RET
+                     898     
+04F3                 899     CHECK_R4:
+04F3 C2D3            900             CLR RS0
+04F5 C2D4            901             CLR RS1
+04F7 EB              902             MOV A, R3
+04F8 5401            903             ANL A, #1
+04FA 70F6            904             JNZ RETURN_6
+                     905             
+04FC C2D3            906             CLR RS0
+04FE C2D4            907             CLR RS1
+0500 EB              908             MOV A, R3
+0501 23              909             RL A
+0502 D2D3            910             SETB RS0
+0504 C2D4            911             CLR RS1
+0506 5B              912             ANL A, R3
+0507 70E9            913             JNZ RETURN_6
+                     914             
+0509 C2D3            915             CLR RS0
+050B C2D4            916             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    15
+
+050D 1F              917             DEC R7
+                     918             
+050E 22              919             RET
+                     920             
+050F                 921     CHECK_R3:
+050F C2D3            922             CLR RS0
+0511 C2D4            923             CLR RS1
+0513 EA              924             MOV A, R2
+0514 5401            925             ANL A, #1
+0516 70DA            926             JNZ RETURN_6
+                     927             
+0518 C2D3            928             CLR RS0
+051A C2D4            929             CLR RS1
+051C EA              930             MOV A, R2
+051D 23              931             RL A
+051E D2D3            932             SETB RS0
+0520 C2D4            933             CLR RS1
+0522 5A              934             ANL A, R2
+0523 70CD            935             JNZ RETURN_6
+                     936             
+0525 C2D3            937             CLR RS0
+0527 C2D4            938             CLR RS1
+0529 1F              939             DEC R7
+                     940             
+052A 22              941             RET
+                     942             
+052B                 943     CHECK_R2:
+052B C2D3            944             CLR RS0
+052D C2D4            945             CLR RS1
+052F E9              946             MOV A, R1
+0530 5401            947             ANL A, #1
+0532 70BE            948             JNZ RETURN_6
+                     949             
+0534 C2D3            950             CLR RS0
+0536 C2D4            951             CLR RS1
+0538 E9              952             MOV A, R1
+0539 23              953             RL A
+053A D2D3            954             SETB RS0
+053C C2D4            955             CLR RS1
+053E 59              956             ANL A, R1
+053F 70B1            957             JNZ RETURN_6
+                     958             
+0541 C2D3            959             CLR RS0
+0543 C2D4            960             CLR RS1
+0545 1F              961             DEC R7
+                     962             
+0546 22              963             RET
+                     964             
+0547                 965     CHECK_R1:
+0547 C2D3            966             CLR RS0
+0549 C2D4            967             CLR RS1
+054B E8              968             MOV A, R0
+054C 5401            969             ANL A, #1
+054E 70A2            970             JNZ RETURN_6
+                     971             
+0550 C2D3            972             CLR RS0
+0552 C2D4            973             CLR RS1
+0554 E8              974             MOV A, R0
+0555 23              975             RL A
+0556 D2D3            976             SETB RS0
+0558 C2D4            977             CLR RS1
+055A 5D              978             ANL A, R5
+055B 7095            979             JNZ RETURN_6
+                     980             
+055D C2D3            981             CLR RS0
+055F C2D4            982             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    16
+
+0561 1F              983             DEC R7
+                     984             
+0562 22              985             RET
+                     986     
+                     987     ;========中斷=========
+                     988     
+0563                 989     INTERRUPT:
+0563 C28D            990             CLR TF0
+0565 758AB0          991             MOV TL0, #176   ;(65536-50ms/1us)%256
+0568 758C3C          992             MOV TH0, #60    ;(65536-50ms/1us)/256
+056B D2D3            993             SETB RS0
+056D D2D4            994             SETB RS1
+056F D909            995             DJNZ R1, RETURN_2
+0571 D2D3            996             SETB RS0
+0573 D2D4            997             SETB RS1
+0575 7908            998             MOV R1, #8      ;50ms * 8 = 400ms       
+0577 B1DC            999             ACALL CHECK_COLLISION   ;確認下方是否有方塊
+                    1000     
+0579 32             1001             RETI
+                    1002     
+057A                1003     RETURN_2:
+057A 32             1004             RETI
+                    1005     
+057B                1006     UPDATE:
+057B C2D3           1007             CLR RS0         ;沒方塊，將方塊往下移
+057D C2D4           1008             CLR RS1
+057F ED             1009             MOV A, R5
+                    1010             
+0580 C2D3           1011             CLR RS0
+0582 C2D4           1012             CLR RS1
+0584 FE             1013             MOV R6, A
+                    1014             
+0585 C2D3           1015             CLR RS0
+0587 C2D4           1016             CLR RS1
+0589 7D00           1017             MOV R5, #0
+                    1018             
+058B C2D3           1019             CLR RS0
+058D C2D4           1020             CLR RS1
+058F EC             1021             MOV A, R4
+                    1022             
+0590 C2D3           1023             CLR RS0
+0592 C2D4           1024             CLR RS1
+0594 FD             1025             MOV R5, A
+                    1026             
+0595 C2D3           1027             CLR RS0
+0597 C2D4           1028             CLR RS1
+0599 7C00           1029             MOV R4, #0
+                    1030             
+059B C2D3           1031             CLR RS0
+059D C2D4           1032             CLR RS1
+059F EB             1033             MOV A, R3
+                    1034             
+05A0 C2D3           1035             CLR RS0
+05A2 C2D4           1036             CLR RS1
+05A4 FC             1037             MOV R4, A
+                    1038             
+05A5 C2D3           1039             CLR RS0
+05A7 C2D4           1040             CLR RS1
+05A9 7B00           1041             MOV R3, #0
+                    1042             
+05AB C2D3           1043             CLR RS0
+05AD C2D4           1044             CLR RS1
+05AF EA             1045             MOV A, R2
+                    1046             
+05B0 C2D3           1047             CLR RS0
+05B2 C2D4           1048             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    17
+
+05B4 FB             1049             MOV R3, A
+                    1050             
+05B5 C2D3           1051             CLR RS0
+05B7 C2D4           1052             CLR RS1
+05B9 7A00           1053             MOV R2, #0
+                    1054             
+05BB C2D3           1055             CLR RS0
+05BD C2D4           1056             CLR RS1
+05BF E9             1057             MOV A, R1
+                    1058             
+05C0 C2D3           1059             CLR RS0
+05C2 C2D4           1060             CLR RS1
+05C4 FA             1061             MOV R2, A
+                    1062             
+05C5 C2D3           1063             CLR RS0
+05C7 C2D4           1064             CLR RS1
+05C9 7900           1065             MOV R1, #0
+                    1066             
+05CB C2D3           1067             CLR RS0
+05CD C2D4           1068             CLR RS1
+05CF E8             1069             MOV A, R0
+                    1070             
+05D0 C2D3           1071             CLR RS0
+05D2 C2D4           1072             CLR RS1
+05D4 F9             1073             MOV R1, A
+                    1074             
+05D5 C2D3           1075             CLR RS0
+05D7 C2D4           1076             CLR RS1
+05D9 7800           1077             MOV R0, #0
+                    1078             
+05DB 22             1079             RET
+                    1080     
+05DC                1081     CHECK_COLLISION:        ;確認下方是否有方塊
+05DC C0E0           1082             PUSH ACC
+                    1083             
+05DE C2D3           1084             CLR RS0         ;落下方塊到最底
+05E0 C2D4           1085             CLR RS1
+05E2 EE             1086             MOV A, R6
+05E3 7041           1087             JNZ PLACE_7
+                    1088             
+05E5 C2D3           1089             CLR RS0         ;有方塊
+05E7 C2D4           1090             CLR RS1
+05E9 ED             1091             MOV A, R5
+05EA D2D3           1092             SETB RS0
+05EC C2D4           1093             CLR RS1
+05EE 5E             1094             ANL A, R6
+05EF 7041           1095             JNZ PLACE_6
+                    1096             
+05F1 C2D3           1097             CLR RS0
+05F3 C2D4           1098             CLR RS1
+05F5 EC             1099             MOV A, R4
+05F6 D2D3           1100             SETB RS0
+05F8 C2D4           1101             CLR RS1
+05FA 5D             1102             ANL A, R5
+05FB 7046           1103             JNZ PLACE_5
+                    1104             
+05FD C2D3           1105             CLR RS0
+05FF C2D4           1106             CLR RS1
+0601 EB             1107             MOV A, R3
+0602 D2D3           1108             SETB RS0
+0604 C2D4           1109             CLR RS1
+0606 5C             1110             ANL A, R4
+0607 704B           1111             JNZ PLACE_4
+                    1112             
+0609 C2D3           1113             CLR RS0
+060B C2D4           1114             CLR RS1
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    18
+
+060D EA             1115             MOV A, R2
+060E D2D3           1116             SETB RS0
+0610 C2D4           1117             CLR RS1
+0612 5B             1118             ANL A, R3
+0613 7050           1119             JNZ PLACE_3
+                    1120             
+0615 C2D3           1121             CLR RS0
+0617 C2D4           1122             CLR RS1
+0619 E9             1123             MOV A, R1
+061A D2D3           1124             SETB RS0
+061C C2D4           1125             CLR RS1
+061E 5A             1126             ANL A, R2
+061F 7055           1127             JNZ PLACE_2
+                    1128             
+0621 B17B           1129             ACALL UPDATE
+                    1130     
+0623 D0E0           1131             POP ACC
+                    1132             
+0625 22             1133             RET
+                    1134     
+0626                1135     PLACE_7:        ;將落下方塊變當前方塊
+0626 D2D3           1136             SETB RS0
+0628 C2D4           1137             CLR RS1
+062A 4E             1138             ORL A, R6
+062B FE             1139             MOV R6, A
+062C C2D3           1140             CLR RS0
+062E C2D4           1141             CLR RS1
+0630 7E00           1142             MOV R6, #0
+                    1143     
+0632                1144     PLACE_6:
+0632 C2D3           1145             CLR RS0
+0634 C2D4           1146             CLR RS1
+0636 ED             1147             MOV A, R5
+0637 D2D3           1148             SETB RS0
+0639 C2D4           1149             CLR RS1
+063B 4D             1150             ORL A, R5
+063C FD             1151             MOV R5, A
+063D C2D3           1152             CLR RS0
+063F C2D4           1153             CLR RS1
+0641 7D00           1154             MOV R5, #0
+                    1155     
+0643                1156     PLACE_5:
+0643 C2D3           1157             CLR RS0
+0645 C2D4           1158             CLR RS1
+0647 EC             1159             MOV A, R4
+0648 D2D3           1160             SETB RS0
+064A C2D4           1161             CLR RS1
+064C 4C             1162             ORL A, R4
+064D FC             1163             MOV R4, A
+064E C2D3           1164             CLR RS0
+0650 C2D4           1165             CLR RS1
+0652 7C00           1166             MOV R4, #0
+                    1167     
+0654                1168     PLACE_4:
+0654 C2D3           1169             CLR RS0
+0656 C2D4           1170             CLR RS1
+0658 EB             1171             MOV A, R3
+0659 D2D3           1172             SETB RS0
+065B C2D4           1173             CLR RS1
+065D 4B             1174             ORL A, R3
+065E FB             1175             MOV R3, A
+065F C2D3           1176             CLR RS0
+0661 C2D4           1177             CLR RS1
+0663 7B00           1178             MOV R3, #0
+                    1179     
+0665                1180     PLACE_3:
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    19
+
+0665 C2D3           1181             CLR RS0
+0667 C2D4           1182             CLR RS1
+0669 EA             1183             MOV A, R2
+066A D2D3           1184             SETB RS0
+066C C2D4           1185             CLR RS1
+066E 4A             1186             ORL A, R2
+066F FA             1187             MOV R2, A
+0670 C2D3           1188             CLR RS0
+0672 C2D4           1189             CLR RS1
+0674 7A00           1190             MOV R2, #0
+                    1191     
+0676                1192     PLACE_2:
+0676 C2D3           1193             CLR RS0
+0678 C2D4           1194             CLR RS1
+067A E9             1195             MOV A, R1
+067B D2D3           1196             SETB RS0
+067D C2D4           1197             CLR RS1
+067F 49             1198             ORL A, R1
+0680 F9             1199             MOV R1, A
+0681 C2D3           1200             CLR RS0
+0683 C2D4           1201             CLR RS1
+0685 7900           1202             MOV R1, #0
+                    1203     
+0687                1204     PLACE_1:
+0687 C2D3           1205             CLR RS0
+0689 C2D4           1206             CLR RS1
+068B E8             1207             MOV A, R0
+068C D2D3           1208             SETB RS0
+068E C2D4           1209             CLR RS1
+0690 48             1210             ORL A, R0
+0691 F8             1211             MOV R0, A
+0692 C2D3           1212             CLR RS0
+0694 C2D4           1213             CLR RS1
+0696 7800           1214             MOV R0, #0
+                    1215             
+0698 D19D           1216             ACALL GEN_TERIS ;產生新方塊
+069A D0E0           1217             POP ACC
+                    1218             
+069C 22             1219             RET
+                    1220     
+069D                1221     GEN_TERIS:
+069D D2D3           1222             SETB RS0
+069F D2D4           1223             SETB RS1
+06A1 EA             1224             MOV A, R2
+06A2 93             1225             MOVC A, @A+DPTR
+06A3 14             1226             DEC A
+06A4 600F           1227             JZ SQUARE
+06A6 14             1228             DEC A
+06A7 6023           1229             JZ RZ
+06A9 14             1230             DEC A
+06AA 6037           1231             JZ LZ
+06AC 14             1232             DEC A
+06AD 604B           1233             JZ LINE
+06AF 14             1234             DEC A
+06B0 605F           1235             JZ LSEVEN
+06B2 14             1236             DEC A
+06B3 6073           1237             JZ RSEVEN
+                    1238     
+06B5                1239     SQUARE:
+06B5 C2D3           1240             CLR RS0
+06B7 C2D4           1241             CLR RS1
+06B9 780C           1242             MOV R0, #00001100B
+06BB 790C           1243             MOV R1, #00001100B
+06BD 7A00           1244             MOV R2, #0
+                    1245             
+06BF D2D3           1246             SETB RS0
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    20
+
+06C1 D2D4           1247             SETB RS1
+06C3 0A             1248             INC R2
+06C4 EA             1249             MOV A, R2
+06C5 75F01E         1250             MOV B, #30
+06C8 84             1251             DIV AB
+06C9 AAF0           1252             MOV R2, B
+                    1253             
+06CB 22             1254             RET
+                    1255     
+06CC                1256     RZ:
+06CC C2D3           1257             CLR RS0
+06CE C2D4           1258             CLR RS1
+06D0 7806           1259             MOV R0, #00000110B
+06D2 790C           1260             MOV R1, #00001100B
+06D4 7A00           1261             MOV R2, #0
+                    1262             
+06D6 D2D3           1263             SETB RS0
+06D8 D2D4           1264             SETB RS1
+06DA 0A             1265             INC R2
+06DB EA             1266             MOV A, R2
+06DC 75F01E         1267             MOV B, #30
+06DF 84             1268             DIV AB
+06E0 AAF0           1269             MOV R2, B
+                    1270             
+06E2 22             1271             RET
+                    1272     
+06E3                1273     LZ:
+06E3 C2D3           1274             CLR RS0
+06E5 C2D4           1275             CLR RS1
+06E7 780C           1276             MOV R0, #00001100B
+06E9 7906           1277             MOV R1, #00000110B
+06EB 7A00           1278             MOV R2, #0
+                    1279             
+06ED D2D3           1280             SETB RS0
+06EF D2D4           1281             SETB RS1
+06F1 0A             1282             INC R2
+06F2 EA             1283             MOV A, R2
+06F3 75F01E         1284             MOV B, #30
+06F6 84             1285             DIV AB
+06F7 AAF0           1286             MOV R2, B
+                    1287             
+06F9 22             1288             RET
+                    1289     
+06FA                1290     LINE:
+06FA C2D3           1291             CLR RS0
+06FC C2D4           1292             CLR RS1
+06FE 780E           1293             MOV R0, #00001110B
+0700 7900           1294             MOV R1, #0
+0702 7A00           1295             MOV R2, #0
+                    1296             
+0704 D2D3           1297             SETB RS0
+0706 D2D4           1298             SETB RS1
+0708 0A             1299             INC R2
+0709 EA             1300             MOV A, R2
+070A 75F01E         1301             MOV B, #30
+070D 84             1302             DIV AB
+070E AAF0           1303             MOV R2, B
+                    1304             
+0710 22             1305             RET
+                    1306     
+0711                1307     LSEVEN:
+0711 C2D3           1308             CLR RS0
+0713 C2D4           1309             CLR RS1
+0715 7808           1310             MOV R0, #00001000B
+0717 790E           1311             MOV R1, #00001110B
+0719 7A00           1312             MOV R2, #0
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    21
+
+                    1313             
+071B D2D3           1314             SETB RS0
+071D D2D4           1315             SETB RS1
+071F 0A             1316             INC R2
+0720 EA             1317             MOV A, R2
+0721 75F01E         1318             MOV B, #30
+0724 84             1319             DIV AB
+0725 AAF0           1320             MOV R2, B
+                    1321             
+0727 22             1322             RET
+                    1323     
+0728                1324     RSEVEN:
+0728 C2D3           1325             CLR RS0
+072A C2D4           1326             CLR RS1
+072C 7802           1327             MOV R0, #00000010B
+072E 790E           1328             MOV R1, #00001110B
+0730 7A00           1329             MOV R2, #0
+                    1330             
+0732 D2D3           1331             SETB RS0
+0734 D2D4           1332             SETB RS1
+0736 0A             1333             INC R2
+0737 EA             1334             MOV A, R2
+0738 75F01E         1335             MOV B, #30
+073B 84             1336             DIV AB
+073C AAF0           1337             MOV R2, B
+                    1338             
+073E 22             1339             RET
+                    1340     
+073F                1341     DELAY:
+073F D2D3           1342             SETB RS0
+0741 D2D4           1343             SETB RS1
+0743 7E50           1344             MOV R6, #050H
+0745                1345     DELAY1:
+0745 D2D3           1346             SETB RS0
+0747 D2D4           1347             SETB RS1
+0749 7F10           1348             MOV R7, #010H
+074B                1349     DELAY2:
+074B D2D3           1350             SETB RS0
+074D D2D4           1351             SETB RS1
+074F DFFE           1352             DJNZ R7, $
+0751 D2D3           1353             SETB RS0
+0753 D2D4           1354             SETB RS1
+0755 DEEE           1355             DJNZ R6, DELAY1
+0757 22             1356             RET
+                    1357     
+0758                1358     TETRIS:
+0758 01020306       1359             DB 1, 2, 3, 6, 3, 5, 4, 6, 3, 4, 1, 5, 1, 3, 2, 4, 6, 5, 4, 2, 3, 6, 5, 6, 1, 2, 4,
+                              5, 2, 1
+075C 03050406                
+0760 03040105                
+0764 01030204                
+0768 06050402                
+076C 03060506                
+0770 01020405                
+0774 0201                    
+                    1360             
+                    1361             END
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    22
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+ACC. . . . . . . .  D ADDR   00E0H   A   
+ACCELATION . . . .  C ADDR   0248H   A   
+B. . . . . . . . .  D ADDR   00F0H   A   
+BUTTON . . . . . .  C ADDR   0225H   A   
+CHECK_COLLISION. .  C ADDR   05DCH   A   
+CHECK_L1 . . . . .  C ADDR   03BEH   A   
+CHECK_L2 . . . . .  C ADDR   03A2H   A   
+CHECK_L3 . . . . .  C ADDR   0386H   A   
+CHECK_L4 . . . . .  C ADDR   036AH   A   
+CHECK_L5 . . . . .  C ADDR   034DH   A   
+CHECK_L6 . . . . .  C ADDR   0331H   A   
+CHECK_L7 . . . . .  C ADDR   0315H   A   
+CHECK_R1 . . . . .  C ADDR   0547H   A   
+CHECK_R2 . . . . .  C ADDR   052BH   A   
+CHECK_R3 . . . . .  C ADDR   050FH   A   
+CHECK_R4 . . . . .  C ADDR   04F3H   A   
+CHECK_R5 . . . . .  C ADDR   04D6H   A   
+CHECK_R6 . . . . .  C ADDR   04BAH   A   
+CHECK_R7 . . . . .  C ADDR   049EH   A   
+COL1 . . . . . . .  C ADDR   0212H   A   
+COL2 . . . . . . .  C ADDR   0219H   A   
+COL3 . . . . . . .  C ADDR   0220H   A   
+CON_SHOW . . . . .  C ADDR   0098H   A   
+DD . . . . . . . .  C ADDR   01D0H   A   
+DELAY. . . . . . .  C ADDR   073FH   A   
+DELAY1 . . . . . .  C ADDR   0745H   A   
+DELAY2 . . . . . .  C ADDR   074BH   A   
+EA . . . . . . . .  B ADDR   00A8H.7 A   
+ET0. . . . . . . .  B ADDR   00A8H.1 A   
+GEN_TERIS. . . . .  C ADDR   069DH   A   
+INTERRUPT. . . . .  C ADDR   0563H   A   
+LB3. . . . . . . .  C ADDR   02F2H   A   
+LB4. . . . . . . .  C ADDR   02CFH   A   
+LB5. . . . . . . .  C ADDR   02ACH   A   
+LB6. . . . . . . .  C ADDR   0289H   A   
+LB7. . . . . . . .  C ADDR   0251H   A   
+LBOUNDRY . . . . .  C ADDR   0274H   A   
+LEFT . . . . . . .  C ADDR   023EH   A   
+LINE . . . . . . .  C ADDR   06FAH   A   
+LSEVEN . . . . . .  C ADDR   0711H   A   
+LZ . . . . . . . .  C ADDR   06E3H   A   
+MAIN . . . . . . .  C ADDR   0050H   A   
+P0 . . . . . . . .  D ADDR   0080H   A   
+P1 . . . . . . . .  D ADDR   0090H   A   
+P2 . . . . . . . .  D ADDR   00A0H   A   
+PLACE_1. . . . . .  C ADDR   0687H   A   
+PLACE_2. . . . . .  C ADDR   0676H   A   
+PLACE_3. . . . . .  C ADDR   0665H   A   
+PLACE_4. . . . . .  C ADDR   0654H   A   
+PLACE_5. . . . . .  C ADDR   0643H   A   
+PLACE_6. . . . . .  C ADDR   0632H   A   
+PLACE_7. . . . . .  C ADDR   0626H   A   
+PT0. . . . . . . .  B ADDR   00B8H.1 A   
+RB3. . . . . . . .  C ADDR   047BH   A   
+RB4. . . . . . . .  C ADDR   0458H   A   
+RB5. . . . . . . .  C ADDR   0435H   A   
+RB6. . . . . . . .  C ADDR   0412H   A   
+RB7. . . . . . . .  C ADDR   03DAH   A   
+RBOUNDRY . . . . .  C ADDR   03FDH   A   
+RETURN_1 . . . . .  C ADDR   01CFH   A   
+A51 MACRO ASSEMBLER  FINAL                                                                01/13/2020 20:06:48 PAGE    23
+
+RETURN_2 . . . . .  C ADDR   057AH   A   
+RETURN_3 . . . . .  C ADDR   0288H   A   
+RETURN_4 . . . . .  C ADDR   0369H   A   
+RETURN_5 . . . . .  C ADDR   0411H   A   
+RETURN_6 . . . . .  C ADDR   04F2H   A   
+RIGHT. . . . . . .  C ADDR   0243H   A   
+ROTATE . . . . . .  C ADDR   023EH   A   
+ROW1 . . . . . . .  C ADDR   01D3H   A   
+ROW2 . . . . . . .  C ADDR   01E5H   A   
+ROW3 . . . . . . .  C ADDR   01F3H   A   
+ROW4 . . . . . . .  C ADDR   0201H   A   
+RS0. . . . . . . .  B ADDR   00D0H.3 A   
+RS1. . . . . . . .  B ADDR   00D0H.4 A   
+RSEVEN . . . . . .  C ADDR   0728H   A   
+RZ . . . . . . . .  C ADDR   06CCH   A   
+SHOW_TERIS1. . . .  C ADDR   019FH   A   
+SHOW_TERIS2. . . .  C ADDR   0177H   A   
+SHOW_TERIS3. . . .  C ADDR   014FH   A   
+SHOW_TERIS4. . . .  C ADDR   0127H   A   
+SHOW_TERIS5. . . .  C ADDR   00FFH   A   
+SHOW_TERIS6. . . .  C ADDR   00D7H   A   
+SHOW_TERIS7. . . .  C ADDR   00B7H   A   
+SQUARE . . . . . .  C ADDR   06B5H   A   
+TETRIS . . . . . .  C ADDR   0758H   A   
+TF0. . . . . . . .  B ADDR   0088H.5 A   
+TH0. . . . . . . .  D ADDR   008CH   A   
+TL0. . . . . . . .  D ADDR   008AH   A   
+TMOD . . . . . . .  D ADDR   0089H   A   
+TR0. . . . . . . .  B ADDR   0088H.4 A   
+TRIGHT . . . . . .  C ADDR   01C9H   A   
+UPDATE . . . . . .  C ADDR   057BH   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
